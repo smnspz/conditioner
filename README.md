@@ -34,3 +34,10 @@ poetry run uvicorn conditioner.api.main:app --reload
 ```bash
 poetry run pytest
 ```
+
+## Linting & type checking
+
+```bash
+poetry run ruff check .
+poetry run mypy src
+```
