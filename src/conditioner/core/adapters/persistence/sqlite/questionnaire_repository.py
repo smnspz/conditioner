@@ -18,6 +18,7 @@ class SqliteQuestionnaireRepository(QuestionnaireRepository):
 
     async def save(self, response: QuestionnaireResponse) -> None:
         """Upsert a user's daily questionnaire response."""
+
         async with connect(self._db_path) as conn:
             await conn.execute(
                 """
@@ -45,6 +46,7 @@ class SqliteQuestionnaireRepository(QuestionnaireRepository):
 
     async def get_by_date(self, user_id: str, day: date) -> QuestionnaireResponse | None:
         """Fetch a user's questionnaire response for a specific date."""
+
         async with connect(self._db_path) as conn:
             # Get questionnaire row for user and date
             cursor = await conn.execute(
@@ -61,6 +63,7 @@ class SqliteQuestionnaireRepository(QuestionnaireRepository):
     @staticmethod
     def _to_domain(row: aiosqlite.Row) -> QuestionnaireResponse:
         """Map a database row to a QuestionnaireResponse domain object."""
+
         # Return mapped questionnaire domain object
         return QuestionnaireResponse(
             user_id=row["user_id"],

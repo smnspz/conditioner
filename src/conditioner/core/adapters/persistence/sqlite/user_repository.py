@@ -18,6 +18,7 @@ class SqliteUserRepository(UserRepository):
 
     async def save(self, user: User) -> None:
         """Upsert a user record."""
+
         async with connect(self._db_path) as conn:
             await conn.execute(
                 """
@@ -39,6 +40,7 @@ class SqliteUserRepository(UserRepository):
 
     async def get_by_id(self, user_id: str) -> User | None:
         """Fetch a user by their unique ID."""
+
         async with connect(self._db_path) as conn:
             # Get user row by ID
             cursor = await conn.execute("SELECT * FROM users WHERE id = ?", (user_id,))
@@ -51,6 +53,7 @@ class SqliteUserRepository(UserRepository):
 
     async def get_by_email(self, email: str) -> User | None:
         """Fetch a user by their email address."""
+
         async with connect(self._db_path) as conn:
             # Get user row by email
             cursor = await conn.execute("SELECT * FROM users WHERE email = ?", (email,))
@@ -64,6 +67,7 @@ class SqliteUserRepository(UserRepository):
     @staticmethod
     def _to_domain(row: aiosqlite.Row) -> User:
         """Map a database row to a User domain object."""
+
         # Return mapped user domain object
         return User(
             id=row["id"],

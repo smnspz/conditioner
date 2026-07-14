@@ -19,10 +19,12 @@ class OAuthStateService:
 
     def issue(self) -> str:
         """Issue a new state token to embed in the authorization request."""
+
         return self._signer.sign({"type": "oauth_state"}, OAUTH_STATE_TTL)
 
     def verify(self, state: str) -> None:
         """Verify a state token returned by the OAuth callback, raising if invalid."""
+
         try:
             claims = self._signer.verify(state)
         except JwtError as exc:

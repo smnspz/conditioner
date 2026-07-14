@@ -18,6 +18,7 @@ class SqliteReadinessRepository(ReadinessRepository):
 
     async def save(self, score: ReadinessScore) -> None:
         """Upsert a daily readiness score for a user."""
+
         async with connect(self._db_path) as conn:
             await conn.execute(
                 """
@@ -33,6 +34,7 @@ class SqliteReadinessRepository(ReadinessRepository):
 
     async def get_by_date(self, user_id: str, day: date) -> ReadinessScore | None:
         """Fetch a user's readiness score for a specific date."""
+
         async with connect(self._db_path) as conn:
             # Get readiness row for user and date
             cursor = await conn.execute(
@@ -48,6 +50,7 @@ class SqliteReadinessRepository(ReadinessRepository):
 
     async def get_range(self, user_id: str, start: date, end: date) -> list[ReadinessScore]:
         """Fetch readiness scores for an inclusive date range, ordered by date."""
+
         async with connect(self._db_path) as conn:
             # Get readiness rows for the date range
             cursor = await conn.execute(
@@ -68,6 +71,7 @@ class SqliteReadinessRepository(ReadinessRepository):
     @staticmethod
     def _to_domain(row: aiosqlite.Row) -> ReadinessScore:
         """Map a database row to a ReadinessScore domain object."""
+
         # Return mapped readiness score domain object
         return ReadinessScore(
             user_id=row["user_id"],

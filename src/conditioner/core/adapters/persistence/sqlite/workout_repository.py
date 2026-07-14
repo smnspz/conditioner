@@ -22,6 +22,7 @@ class SqliteWorkoutRepository(WorkoutRepository):
 
     async def save(self, workout: Workout) -> None:
         """Upsert a workout plan, replacing all sessions and exercises wholesale."""
+
         async with connect(self._db_path) as conn:
             await conn.execute(
                 """
@@ -69,6 +70,7 @@ class SqliteWorkoutRepository(WorkoutRepository):
 
     async def get_by_id(self, workout_id: str) -> Workout | None:
         """Fetch a workout plan by its unique ID, including all sessions and exercises."""
+
         async with connect(self._db_path) as conn:
             # Get workout row by ID
             cursor = await conn.execute("SELECT * FROM workouts WHERE id = ?", (workout_id,))
@@ -83,6 +85,7 @@ class SqliteWorkoutRepository(WorkoutRepository):
 
     async def get_by_week(self, user_id: str, week_start: date) -> Workout | None:
         """Fetch a user's workout plan for a given week start date."""
+
         async with connect(self._db_path) as conn:
             # Get workout row for user and week
             cursor = await conn.execute(
@@ -101,6 +104,7 @@ class SqliteWorkoutRepository(WorkoutRepository):
     @staticmethod
     async def _to_domain(conn: aiosqlite.Connection, workout_row: aiosqlite.Row) -> Workout:
         """Reconstruct a full Workout aggregate from the workout, sessions, and exercises rows."""
+
         # Get session rows for this workout
         session_cursor = await conn.execute(
             "SELECT * FROM sessions WHERE workout_id = ? ORDER BY date", (workout_row["id"],)

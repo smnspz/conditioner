@@ -40,6 +40,7 @@ def login(
     state_service: Annotated[OAuthStateService, Depends(get_oauth_state_service)],
 ) -> RedirectResponse:
     """Redirect browser to Google's OAuth consent screen."""
+
     # Get signed state token for CSRF protection
     state = state_service.issue()
 

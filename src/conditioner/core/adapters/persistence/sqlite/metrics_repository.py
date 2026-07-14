@@ -18,6 +18,7 @@ class SqliteMetricsRepository(MetricsRepository):
 
     async def save(self, metrics: WearableDailyMetrics) -> None:
         """Upsert a day's wearable metrics for a user."""
+
         async with connect(self._db_path) as conn:
             await conn.execute(
                 """
@@ -60,6 +61,7 @@ class SqliteMetricsRepository(MetricsRepository):
 
     async def get_by_date(self, user_id: str, day: date) -> WearableDailyMetrics | None:
         """Fetch wearable metrics for a single day."""
+
         async with connect(self._db_path) as conn:
             # Get metrics row for user and date
             cursor = await conn.execute(
@@ -77,6 +79,7 @@ class SqliteMetricsRepository(MetricsRepository):
         self, user_id: str, start: date, end: date
     ) -> list[WearableDailyMetrics]:
         """Fetch wearable metrics for an inclusive date range, ordered by date."""
+
         async with connect(self._db_path) as conn:
             # Get metrics rows for the date range
             cursor = await conn.execute(
@@ -97,6 +100,7 @@ class SqliteMetricsRepository(MetricsRepository):
     @staticmethod
     def _to_domain(row: aiosqlite.Row) -> WearableDailyMetrics:
         """Map a database row to a WearableDailyMetrics domain object."""
+
         # Return mapped wearable metrics domain object
         return WearableDailyMetrics(
             user_id=row["user_id"],

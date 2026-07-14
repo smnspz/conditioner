@@ -19,10 +19,12 @@ class AccessTokenService:
 
     def issue(self, user_id: str) -> str:
         """Issue a new Bearer token authenticating the given user."""
+
         return self._signer.sign({"sub": user_id, "type": "access"}, ACCESS_TOKEN_TTL)
 
     def verify(self, token: str) -> str:
         """Verify a Bearer token and return the user id it authenticates."""
+
         try:
             claims = self._signer.verify(token)
         except JwtError as exc:

@@ -30,12 +30,14 @@ def get_user_repository(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> UserRepository:
     """Resolve the SQLite-backed user repository."""
+
     # Return user repository
     return SqliteUserRepository(settings.database_path)
 
 
 def get_token_cipher(settings: Annotated[Settings, Depends(get_settings)]) -> TokenCipher:
     """Resolve the token encryption cipher."""
+
     # Return token cipher
     return TokenCipher(settings.token_encryption_key)
 
@@ -45,6 +47,7 @@ def get_credentials_repository(
     cipher: Annotated[TokenCipher, Depends(get_token_cipher)],
 ) -> CredentialsRepository:
     """Resolve the SQLite-backed credentials repository."""
+
     # Return credentials repository
     return SqliteCredentialsRepository(settings.database_path, cipher)
 
@@ -53,6 +56,7 @@ def get_google_oauth_provider(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> GoogleOAuthProvider:
     """Resolve the Google OAuth client."""
+
     # Return Google OAuth provider
     return GoogleOAuthClient(
         client_secrets_path=settings.google_client_secrets_path,
@@ -62,6 +66,7 @@ def get_google_oauth_provider(
 
 def get_jwt_signer(settings: Annotated[Settings, Depends(get_settings)]) -> JwtSigner:
     """Resolve the JWT signer."""
+
     # Return JWT signer
     return JwtSigner(settings.jwt_secret_key)
 
@@ -70,6 +75,7 @@ def get_access_token_service(
     signer: Annotated[JwtSigner, Depends(get_jwt_signer)],
 ) -> AccessTokenService:
     """Resolve the access token service."""
+
     # Return access token service
     return AccessTokenService(signer)
 
@@ -78,6 +84,7 @@ def get_oauth_state_service(
     signer: Annotated[JwtSigner, Depends(get_jwt_signer)],
 ) -> OAuthStateService:
     """Resolve the OAuth state service."""
+
     # Return OAuth state service
     return OAuthStateService(signer)
 
@@ -86,6 +93,7 @@ def get_questionnaire_repository(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> QuestionnaireRepository:
     """Resolve the SQLite-backed questionnaire repository."""
+
     # Return questionnaire repository
     return SqliteQuestionnaireRepository(settings.database_path)
 
@@ -95,6 +103,7 @@ async def get_current_user_id(
     token_service: Annotated[AccessTokenService, Depends(get_access_token_service)],
 ) -> str:
     """Extract and verify the user ID from the Bearer token in the Authorization header."""
+
     try:
         # Return verified user ID
         return token_service.verify(credentials.credentials)

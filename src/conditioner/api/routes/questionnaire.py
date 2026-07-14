@@ -49,6 +49,7 @@ async def submit(
     repo: Annotated[QuestionnaireRepository, Depends(get_questionnaire_repository)],
 ) -> QuestionnaireResponseOut:
     """Submit or update the daily questionnaire for the authenticated user."""
+
     # Save questionnaire response to persistence
     await repo.save(
         QuestionnaireResponse(
@@ -80,6 +81,7 @@ async def get_by_date(
     repo: Annotated[QuestionnaireRepository, Depends(get_questionnaire_repository)],
 ) -> QuestionnaireResponseOut:
     """Fetch the authenticated user's questionnaire response for a given date."""
+
     # Get questionnaire response for the requested day
     response = await repo.get_by_date(user_id, day)
     if response is None:

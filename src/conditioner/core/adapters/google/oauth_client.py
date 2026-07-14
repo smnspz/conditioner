@@ -37,6 +37,7 @@ class GoogleOAuthClient(GoogleOAuthProvider):
 
     def get_authorization_url(self, state: str) -> str:
         """Build the Google OAuth consent URL with required scopes and state."""
+
         # Set query parameters for the OAuth consent URL
         params = {
             "client_id": self._client_id,
@@ -53,6 +54,7 @@ class GoogleOAuthClient(GoogleOAuthProvider):
 
     async def exchange_code(self, code: str) -> GoogleTokenResponse:
         """Exchange an authorization code for Google OAuth tokens."""
+
         # Get token response from Google
         payload = await self._post_token(
             {
@@ -69,6 +71,7 @@ class GoogleOAuthClient(GoogleOAuthProvider):
 
     async def refresh_access_token(self, refresh_token: str) -> GoogleTokenResponse:
         """Use a refresh token to obtain a fresh access token from Google."""
+
         # Get refreshed token response from Google
         payload = await self._post_token(
             {
@@ -84,6 +87,7 @@ class GoogleOAuthClient(GoogleOAuthProvider):
 
     async def get_user_email(self, access_token: str) -> str:
         """Fetch the authenticated user's email address from the Google userinfo endpoint."""
+
         async with httpx.AsyncClient(transport=self._transport) as client:
             # Get userinfo response from Google
             response = await client.get(
@@ -97,6 +101,7 @@ class GoogleOAuthClient(GoogleOAuthProvider):
 
     async def _post_token(self, data: dict[str, str]) -> dict[str, object]:
         """POST form data to the Google token endpoint and return the parsed JSON response."""
+
         async with httpx.AsyncClient(transport=self._transport) as client:
             # Get token endpoint response
             response = await client.post(self._token_uri, data=data)
@@ -111,6 +116,7 @@ class GoogleOAuthClient(GoogleOAuthProvider):
     @staticmethod
     def _to_domain(payload: dict[str, object]) -> GoogleTokenResponse:
         """Convert a raw Google token payload dict into a GoogleTokenResponse domain object."""
+
         # Return mapped domain token response
         return GoogleTokenResponse(
             access_token=str(payload["access_token"]),

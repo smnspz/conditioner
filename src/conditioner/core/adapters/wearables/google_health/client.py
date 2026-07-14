@@ -32,6 +32,7 @@ class GoogleHealthClient(WearableDataProvider):
         end: date,
     ) -> list[WearableDailyMetrics]:
         """Fetch daily wearable metrics from Google Health for an inclusive date range."""
+
         # Initializations
         headers = {"Authorization": f"Bearer {credentials.access_token}"}
 
@@ -83,6 +84,7 @@ class GoogleHealthClient(WearableDataProvider):
         filter_str: str,
     ) -> list[dict]:
         """Fetch all data points for a data type, following pagination."""
+
         # Initializations
         url = f"{GOOGLE_HEALTH_BASE_URL}/users/me/dataTypes/{data_type}/dataPoints"
         params: dict[str, str | int] = {"filter": filter_str, "pageSize": 1000}
@@ -117,6 +119,7 @@ class GoogleHealthClient(WearableDataProvider):
         end_excl: date,
     ) -> list[dict]:
         """Fetch one rolled-up data point per day for a given type and date range."""
+
         url = f"{GOOGLE_HEALTH_BASE_URL}/users/me/dataTypes/{data_type}/dataPoints:dailyRollUp"
 
         # Set request body with date range and daily window
@@ -146,6 +149,7 @@ def _build_metrics(
     steps_points: list[dict],
 ) -> list[WearableDailyMetrics]:
     """Map raw API data points to one WearableDailyMetrics per day in the range."""
+
     # Index daily data types by date
     # Set HRV lookup keyed by date
     hrv_by_date = {
@@ -211,6 +215,7 @@ def _build_day(
     steps_point: dict | None,
 ) -> WearableDailyMetrics:
     """Build a single day's WearableDailyMetrics from raw API data points."""
+
     # Extract HRV RMSSD — deep-sleep value preferred; fall back to daily average
     hrv: float | None = None
     if hrv_point:
@@ -308,20 +313,24 @@ def _build_day(
 
 def _date_from_struct(d: dict) -> date:
     """Convert a Google Health Date object {year, month, day} to a Python date."""
+
     return date(d["year"], d["month"], d["day"])
 
 
 def _date_from_steps(point: dict) -> date:
     """Extract the date from a steps dailyRollUp point via its startTime."""
+
     start_str = point["steps"].get("startTime", "")
     return _parse_ts(start_str).date() if start_str else date.min
 
 
 def _sleep_minutes(sleep_data: dict) -> int:
     """Return minutes asleep from a sleep session's data, used for session ranking."""
+
     return int(sleep_data.get("summary", {}).get("minutesAsleep") or 0)
 
 
 def _parse_ts(ts: str) -> datetime:
     """Parse an RFC-3339 timestamp string to an aware UTC datetime."""
+
     return datetime.fromisoformat(ts.replace("Z", "+00:00"))

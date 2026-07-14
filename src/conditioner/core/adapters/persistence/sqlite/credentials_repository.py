@@ -23,6 +23,7 @@ class SqliteCredentialsRepository(CredentialsRepository):
 
     async def save(self, credentials: GoogleCredentials) -> None:
         """Upsert Google credentials for a user, encrypting tokens at rest."""
+
         async with connect(self._db_path) as conn:
             await conn.execute(
                 """
@@ -47,6 +48,7 @@ class SqliteCredentialsRepository(CredentialsRepository):
 
     async def get_by_user_id(self, user_id: str) -> GoogleCredentials | None:
         """Fetch stored Google credentials for a user, decrypted."""
+
         async with connect(self._db_path) as conn:
             # Get credentials row for this user
             cursor = await conn.execute(
@@ -61,6 +63,7 @@ class SqliteCredentialsRepository(CredentialsRepository):
 
     def _to_domain(self, row: aiosqlite.Row) -> GoogleCredentials:
         """Map a database row to a GoogleCredentials domain object, decrypting tokens."""
+
         # Return decrypted credentials domain object
         return GoogleCredentials(
             user_id=row["user_id"],
