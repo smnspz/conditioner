@@ -18,7 +18,7 @@ class Settings(BaseSettings):
 
     database_path: str = "data/conditioner.db"
     google_client_secrets_path: str = "client_secret.json"
-    google_redirect_uri: str = "http://localhost:9876/auth/callback"
+    google_redirect_uri: str = "http://localhost:9876/auth/google/callback"
     jwt_secret_key: str
     token_encryption_key: str
 

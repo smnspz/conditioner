@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel
 
 from conditioner.api.dependencies import (
@@ -26,25 +27,25 @@ from conditioner.shared.constants import BEARER_TOKEN_SCHEME
 router = APIRouter(prefix="/auth/google", tags=["auth"])
 
 
-class AuthorizationUrlResponse(BaseModel):
-    authorization_url: str
-
-
 class TokenResponse(BaseModel):
+    """Bearer token issued after successful OAuth."""
+
     access_token: str
     token_type: str = BEARER_TOKEN_SCHEME.lower()
 
 
-@router.get("/login", response_model=AuthorizationUrlResponse)
+@router.get("/login")
 def login(
     oauth_provider: Annotated[GoogleOAuthProvider, Depends(get_google_oauth_provider)],
     state_service: Annotated[OAuthStateService, Depends(get_oauth_state_service)],
-) -> AuthorizationUrlResponse:
+) -> RedirectResponse:
+    """Redirect browser to Google's OAuth consent screen."""
     state = state_service.issue()
-    return AuthorizationUrlResponse(authorization_url=oauth_provider.get_authorization_url(state))
+    # Get redirect URL to Google OAuth
+    return RedirectResponse(url=oauth_provider.get_authorization_url(state))
 
 
-@router.get("/callback", response_model=TokenResponse)
+@router.get("/callback")
 async def callback(
     code: str,
     state: str,
@@ -53,7 +54,7 @@ async def callback(
     user_repository: Annotated[UserRepository, Depends(get_user_repository)],
     credentials_repository: Annotated[CredentialsRepository, Depends(get_credentials_repository)],
     access_token_service: Annotated[AccessTokenService, Depends(get_access_token_service)],
-) -> TokenResponse:
+) -> HTMLResponse:
     try:
         state_service.verify(state)
     except InvalidOAuthState as exc:
@@ -89,4 +90,18 @@ async def callback(
         )
     )
 
-    return TokenResponse(access_token=access_token_service.issue(user.id))
+    # Issue our Bearer token
+    token = access_token_service.issue(user.id)
+    # Return success page with token stored in localStorage
+    return HTMLResponse(content=f"""<!DOCTYPE html>
+<html>
+<head><title>Conditioner — Authenticated</title></head>
+<body>
+<h2>Authentication successful</h2>
+<p>Your access token has been saved.</p>
+<script>
+  localStorage.setItem("access_token", "{token}");
+</script>
+</body>
+</html>
+""")
