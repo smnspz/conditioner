@@ -19,11 +19,11 @@ The project follows hexagonal (ports and adapters) architecture, keeping busines
 
 Under the `conditioner` package (`src/conditioner`):
 
-- `core` — business logic (use cases / application services orchestrating the domain).
-- `adapters` — concrete implementations of the ports (e.g. Google Health API client, SQLite persistence).
-- `services` — supporting services used by the core.
-- `interfaces` — the ports: abstract interfaces that adapters implement and core depends on.
-- `domain` — data models (entities/value objects).
+- `core` — business logic (use cases / application services orchestrating the domain), and everything it depends on:
+  - `core/adapters` — concrete implementations of the ports (e.g. Google Health API client, SQLite persistence).
+  - `core/services` — supporting services used by the core.
+  - `core/interfaces` — the ports: abstract interfaces that adapters implement and core depends on.
+  - `core/domain` — data models (entities/value objects).
 - `shared` — cross-cutting code, including `shared/constants.py` for non-secret string constants.
 - `api` — FastAPI routers/endpoints, the inbound HTTP interface.
 

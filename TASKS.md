@@ -11,7 +11,7 @@
 6. Persist users, credentials, daily metrics/questionnaire answers, readiness scores, and generated workouts via a persistence port (SQLite adapter first).
 
 ### Non-functional
-- Hexagonal architecture: `core`/`domain` must not import from `adapters`; both wearable ingestion and persistence stay behind `interfaces`.
+- Hexagonal architecture: `core` (including `core/domain`) must not import from `core/adapters`; both wearable ingestion and persistence stay behind `core/interfaces`.
 - No magic strings — constants in `shared/constants.py`.
 - GDPR: health data is special-category personal data — need lawful basis/consent capture, data export, data deletion ("right to erasure"), encryption at rest for tokens, retention policy.
 - Tests (unit → e2e) required per finished feature; commit hooks run test suite.
@@ -21,17 +21,17 @@
 
 ### 0. Project bootstrap
 - [ ] Fill in `pyproject.toml` deps: fastapi, uvicorn, httpx, yoyo-migrations, pydantic, sqlite/aiosqlite, python-jose or similar for Bearer tokens, pytest.
-- [ ] Scaffold `core/`, `adapters/`, `services/`, `interfaces/`, `domain/`, `shared/`, `api/` under `src/conditioner`.
+- [ ] Scaffold `core/` (with `adapters/`, `services/`, `interfaces/`, `domain/` nested inside), `shared/`, `api/` under `src/conditioner`.
 - [ ] Set up `migrations/` with yoyo config.
 - [ ] Reconcile `client_secret.json` vs CLAUDE.md's `client_secrets.json` naming.
 - [ ] Write initial README (setup, run, test commands).
 
 ### 1. Domain models
-- [ ] `domain`: User, GoogleCredentials, WearableDailyMetrics, QuestionnaireResponse, ReadinessScore, Workout/Session/Exercise.
+- [ ] `core/domain`: User, GoogleCredentials, WearableDailyMetrics, QuestionnaireResponse, ReadinessScore, Workout/Session/Exercise.
 
 ### 2. Persistence port + SQLite adapter
-- [ ] `interfaces`: `UserRepository`, `CredentialsRepository`, `MetricsRepository`, `WorkoutRepository`, etc.
-- [ ] `adapters/persistence/sqlite`: implementations + migrations for each table.
+- [ ] `core/interfaces`: `UserRepository`, `CredentialsRepository`, `MetricsRepository`, `WorkoutRepository`, etc.
+- [ ] `core/adapters/persistence/sqlite`: implementations + migrations for each table.
 
 ### 3. Auth
 - [ ] Google OAuth flow (authorization URL, callback, token exchange) using `client_secret.json`.
@@ -39,14 +39,14 @@
 - [ ] Issue/verify our own Bearer tokens; auth dependency for FastAPI routes.
 
 ### 4. Wearable ingestion port + Google Health adapter
-- [ ] `interfaces`: `WearableDataProvider` port (fetch HRV, RHR, sleep, steps, etc. for a date range).
-- [ ] `adapters/wearables/google_health`: httpx client hitting Google Health API endpoints, mapped to domain models.
+- [ ] `core/interfaces`: `WearableDataProvider` port (fetch HRV, RHR, sleep, steps, etc. for a date range).
+- [ ] `core/adapters/wearables/google_health`: httpx client hitting Google Health API endpoints, mapped to domain models.
 
 ### 5. Questionnaire
 - [ ] API endpoint + core use case to submit/store daily questionnaire responses.
 
 ### 6. Readiness score service
-- [ ] `services`: normalization functions per metric (HRV, RHR, sleep composite, subjective wellbeing).
+- [ ] `core/services`: normalization functions per metric (HRV, RHR, sleep composite, subjective wellbeing).
 - [ ] `core`: aggregation use case implementing the weighted formula + load penalties (consecutive days, ACWR) + zone mapping.
 - [ ] Baseline computation (rolling 7–14 day averages) as a supporting service.
 
