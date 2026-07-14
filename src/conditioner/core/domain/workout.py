@@ -18,6 +18,7 @@ class Exercise:
     """A single prescribed exercise within a session.
 
     Attributes:
+        id: Unique identifier.
         name: Exercise name (e.g. "Back squat").
         modality: Broad category of the exercise.
         sets: Number of sets prescribed.
@@ -26,6 +27,7 @@ class Exercise:
         target_load: Target intensity/load (e.g. % of 1RM, or pace), provider-specific units.
     """
 
+    id: str
     name: str
     modality: ExerciseModality
     sets: int | None = None
@@ -39,11 +41,13 @@ class Session:
     """A single training session scheduled for a specific day.
 
     Attributes:
+        id: Unique identifier.
         date: The calendar day this session is scheduled for.
         exercises: The exercises prescribed for this session.
         completed: Whether the user has completed this session.
     """
 
+    id: str
     date: date
     exercises: list[Exercise] = field(default_factory=list)
     completed: bool = False

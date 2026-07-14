@@ -45,3 +45,6 @@ python_version = "3.12"
 mypy_path = "src"
 packages = ["conditioner"]
 strict = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

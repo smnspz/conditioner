@@ -30,8 +30,8 @@
 - [x] `core/domain`: User, GoogleCredentials, WearableDailyMetrics, QuestionnaireResponse, ReadinessScore, Workout/Session/Exercise.
 
 ### 2. Persistence port + SQLite adapter
-- [ ] `core/interfaces`: `UserRepository`, `CredentialsRepository`, `MetricsRepository`, `WorkoutRepository`, etc.
-- [ ] `core/adapters/persistence/sqlite`: implementations + migrations for each table.
+- [x] `core/interfaces`: `UserRepository`, `CredentialsRepository`, `MetricsRepository`, `WorkoutRepository`, etc.
+- [x] `core/adapters/persistence/sqlite`: implementations + migrations for each table.
 
 ### 3. Auth
 - [ ] Google OAuth flow (authorization URL, callback, token exchange) using `client_secret.json`.
