@@ -11,3 +11,4 @@ GOOGLE_FITNESS_SCOPES = [
     "https://www.googleapis.com/auth/fitness.body.read",
 ]
 GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
+GOOGLE_HEALTH_BASE_URL = "https://health.googleapis.com/v4"
