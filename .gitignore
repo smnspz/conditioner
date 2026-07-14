@@ -4,6 +4,9 @@ client_secret*.*
 
 # Python garbage
 __pycache__
+.pytest_cache
+.ruff_cache
+.mypy_cache
 
 # Local database
 data/*.db
