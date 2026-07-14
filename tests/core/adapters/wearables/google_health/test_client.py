@@ -34,10 +34,14 @@ def sample_points():
                 "minutesAwake": "30",
             },
             "stages": [
-                {"type": "AWAKE", "startTime": "2024-08-13T22:30:00Z", "endTime": "2024-08-13T22:45:00Z"},
-                {"type": "LIGHT", "startTime": "2024-08-13T22:45:00Z", "endTime": "2024-08-14T02:00:00Z"},
-                {"type": "DEEP", "startTime": "2024-08-14T02:00:00Z", "endTime": "2024-08-14T04:00:00Z"},
-                {"type": "REM", "startTime": "2024-08-14T04:00:00Z", "endTime": "2024-08-14T06:30:00Z"},
+                {"type": "AWAKE", "startTime": "2024-08-13T22:30:00Z",
+                 "endTime": "2024-08-13T22:45:00Z"},
+                {"type": "LIGHT", "startTime": "2024-08-13T22:45:00Z",
+                 "endTime": "2024-08-14T02:00:00Z"},
+                {"type": "DEEP", "startTime": "2024-08-14T02:00:00Z",
+                 "endTime": "2024-08-14T04:00:00Z"},
+                {"type": "REM", "startTime": "2024-08-14T04:00:00Z",
+                 "endTime": "2024-08-14T06:30:00Z"},
             ],
         }
     }]
@@ -91,18 +95,22 @@ def test_build_metrics_prefers_longest_sleep_session():
     short = {
         "sleep": {
             "interval": {"startTime": "2024-08-13T23:00:00Z", "endTime": "2024-08-14T04:00:00Z"},
-            "summary": {"minutesAsleep": "280", "minutesInSleepPeriod": "300", "minutesAwake": "20"},
+            "summary": {"minutesAsleep": "280", "minutesInSleepPeriod": "300",
+                        "minutesAwake": "20"},
             "stages": [],
         }
     }
     long = {
         "sleep": {
             "interval": {"startTime": "2024-08-13T22:00:00Z", "endTime": "2024-08-14T06:30:00Z"},
-            "summary": {"minutesAsleep": "450", "minutesInSleepPeriod": "510", "minutesAwake": "60"},
+            "summary": {"minutesAsleep": "450", "minutesInSleepPeriod": "510",
+                        "minutesAwake": "60"},
             "stages": [],
         }
     }
-    result = _build_metrics("user-1", date(2024, 8, 14), date(2024, 8, 14), [], [], [short, long], [])
+    result = _build_metrics(
+        "user-1", date(2024, 8, 14), date(2024, 8, 14), [], [], [short, long], []
+    )
 
     assert result[0].sleep_duration_hours == pytest.approx(450 / 60)
 

@@ -63,7 +63,10 @@ def test_submit_questionnaire_stores_and_returns_response(client: TestClient) ->
 def test_submit_with_sick_flag(client: TestClient) -> None:
     response = client.post(
         "/questionnaire",
-        json={"date": "2024-08-14", "fatigue": 8, "soreness": 6, "stress": 4, "sleep_quality": 3, "is_sick": True},
+        json={
+            "date": "2024-08-14", "fatigue": 8, "soreness": 6,
+            "stress": 4, "sleep_quality": 3, "is_sick": True,
+        },
         headers={"Authorization": "Bearer dummy"},
     )
 

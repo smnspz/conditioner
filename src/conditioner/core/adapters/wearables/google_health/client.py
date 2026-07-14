@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import UTC, date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 
 import httpx
 
@@ -37,20 +37,23 @@ class GoogleHealthClient(WearableDataProvider):
         end_excl = end + timedelta(days=1)
 
         async with httpx.AsyncClient(transport=self._transport) as client:
-            hrv = await self._list(
-                client, headers, "daily-heart-rate-variability",
-                f'dailyHeartRateVariability.date >= "{start}" AND dailyHeartRateVariability.date < "{end_excl}"',
+            hrv_filter = (
+                f'dailyHeartRateVariability.date >= "{start}"'
+                f' AND dailyHeartRateVariability.date < "{end_excl}"'
             )
-            rhr = await self._list(
-                client, headers, "daily-resting-heart-rate",
-                f'dailyRestingHeartRate.date >= "{start}" AND dailyRestingHeartRate.date < "{end_excl}"',
+            hrv = await self._list(client, headers, "daily-heart-rate-variability", hrv_filter)
+            rhr_filter = (
+                f'dailyRestingHeartRate.date >= "{start}"'
+                f' AND dailyRestingHeartRate.date < "{end_excl}"'
             )
+            rhr = await self._list(client, headers, "daily-resting-heart-rate", rhr_filter)
             # Query from previous evening to capture sessions that start before midnight
-            sleep = await self._list(
-                client, headers, "sleep",
-                f'sleep.interval.start_time >= "{(start - timedelta(days=1)).isoformat()}T18:00:00Z"'
-                f' AND sleep.interval.start_time < "{end_excl.isoformat()}T12:00:00Z"',
+            prev_evening = (start - timedelta(days=1)).isoformat()
+            sleep_filter = (
+                f'sleep.interval.start_time >= "{prev_evening}T18:00:00Z"'
+                f' AND sleep.interval.start_time < "{end_excl.isoformat()}T12:00:00Z"'
             )
+            sleep = await self._list(client, headers, "sleep", sleep_filter)
             steps = await self._daily_roll_up(client, headers, "steps", start, end_excl)
 
         # Get mapped metrics list
@@ -195,7 +198,9 @@ def _build_day(
         s = sleep_point["sleep"]
         summary = s.get("summary", {})
         minutes_asleep = int(summary["minutesAsleep"]) if summary.get("minutesAsleep") else 0
-        minutes_in_period = int(summary["minutesInSleepPeriod"]) if summary.get("minutesInSleepPeriod") else 0
+        minutes_in_period = (
+            int(summary["minutesInSleepPeriod"]) if summary.get("minutesInSleepPeriod") else 0
+        )
         minutes_awake = int(summary["minutesAwake"]) if summary.get("minutesAwake") else 0
 
         if minutes_asleep:

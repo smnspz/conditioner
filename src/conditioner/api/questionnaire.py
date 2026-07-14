@@ -82,7 +82,9 @@ async def get_by_date(
     # Get questionnaire response for the requested day
     response = await repo.get_by_date(user_id, day)
     if response is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No response for this date")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="No response for this date"
+        )
     # Return the response
     return QuestionnaireResponseOut(
         date=response.date,
