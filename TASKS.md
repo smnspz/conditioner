@@ -34,9 +34,9 @@
 - [x] `core/adapters/persistence/sqlite`: implementations + migrations for each table.
 
 ### 3. Auth
-- [ ] Google OAuth flow (authorization URL, callback, token exchange) using `client_secret.json`.
-- [ ] Encrypt/store Google credentials in SQLite.
-- [ ] Issue/verify our own Bearer tokens; auth dependency for FastAPI routes.
+- [x] Google OAuth flow (authorization URL, callback, token exchange) using `client_secret.json`.
+- [x] Encrypt/store Google credentials in SQLite.
+- [x] Issue/verify our own Bearer tokens; auth dependency for FastAPI routes.
 
 ### 4. Wearable ingestion port + Google Health adapter
 - [ ] `core/interfaces`: `WearableDataProvider` port (fetch HRV, RHR, sleep, steps, etc. for a date range).

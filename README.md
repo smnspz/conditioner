@@ -14,6 +14,13 @@ poetry install
 
 Place your Google OAuth `client_secret.json` in the repo root (not committed — see `.gitignore`).
 
+Copy `.env.example` to `.env` and fill in:
+- `CONDITIONER_JWT_SECRET_KEY` — any random string, used to sign our own Bearer tokens and OAuth CSRF state.
+- `CONDITIONER_TOKEN_ENCRYPTION_KEY` — a Fernet key used to encrypt stored Google tokens at rest, generate one with:
+  ```bash
+  poetry run python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+  ```
+
 ## Database
 
 Migrations are managed with [yoyo](https://ollycope.com/software/yoyo/latest/) against a local SQLite database at `data/conditioner.db`.

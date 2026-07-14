@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 from yoyo import get_backend, read_migrations
 
-MIGRATIONS_DIR = Path(__file__).parents[5] / "migrations"
+MIGRATIONS_DIR = Path(__file__).parents[1] / "migrations"
 
 
 @pytest.fixture
