@@ -27,7 +27,7 @@
 - [ ] Write initial README (setup, run, test commands).
 
 ### 1. Domain models
-- [ ] `core/domain`: User, GoogleCredentials, WearableDailyMetrics, QuestionnaireResponse, ReadinessScore, Workout/Session/Exercise.
+- [x] `core/domain`: User, GoogleCredentials, WearableDailyMetrics, QuestionnaireResponse, ReadinessScore, Workout/Session/Exercise.
 
 ### 2. Persistence port + SQLite adapter
 - [ ] `core/interfaces`: `UserRepository`, `CredentialsRepository`, `MetricsRepository`, `WorkoutRepository`, etc.
