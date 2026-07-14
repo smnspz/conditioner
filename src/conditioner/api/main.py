@@ -10,4 +10,6 @@ app.include_router(questionnaire_router)
 
 @app.get("/health")
 def health_check() -> dict[str, str]:
+    """Return a simple liveness response."""
+    # Return health status
     return {"status": "ok"}

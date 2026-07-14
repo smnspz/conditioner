@@ -34,29 +34,45 @@ class GoogleHealthClient(WearableDataProvider):
         """Fetch daily wearable metrics from Google Health for an inclusive date range."""
         # Initializations
         headers = {"Authorization": f"Bearer {credentials.access_token}"}
+
+        # Set exclusive end date for range queries
         end_excl = end + timedelta(days=1)
 
         async with httpx.AsyncClient(transport=self._transport) as client:
+            # Set HRV filter string for the date range
             hrv_filter = (
                 f'dailyHeartRateVariability.date >= "{start}"'
                 f' AND dailyHeartRateVariability.date < "{end_excl}"'
             )
+
+            # Get HRV data points
             hrv = await self._list(client, headers, "daily-heart-rate-variability", hrv_filter)
+
+            # Set RHR filter string for the date range
             rhr_filter = (
                 f'dailyRestingHeartRate.date >= "{start}"'
                 f' AND dailyRestingHeartRate.date < "{end_excl}"'
             )
+
+            # Get RHR data points
             rhr = await self._list(client, headers, "daily-resting-heart-rate", rhr_filter)
+
             # Query from previous evening to capture sessions that start before midnight
             prev_evening = (start - timedelta(days=1)).isoformat()
+
+            # Set sleep filter string spanning overnight sessions
             sleep_filter = (
                 f'sleep.interval.start_time >= "{prev_evening}T18:00:00Z"'
                 f' AND sleep.interval.start_time < "{end_excl.isoformat()}T12:00:00Z"'
             )
+
+            # Get sleep data points
             sleep = await self._list(client, headers, "sleep", sleep_filter)
+
+            # Get daily step counts
             steps = await self._daily_roll_up(client, headers, "steps", start, end_excl)
 
-        # Get mapped metrics list
+        # Return mapped metrics list
         return _build_metrics(user_id, start, end, hrv, rhr, sleep, steps)
 
     async def _list(
@@ -67,18 +83,28 @@ class GoogleHealthClient(WearableDataProvider):
         filter_str: str,
     ) -> list[dict]:
         """Fetch all data points for a data type, following pagination."""
+        # Initializations
         url = f"{GOOGLE_HEALTH_BASE_URL}/users/me/dataTypes/{data_type}/dataPoints"
         params: dict[str, str | int] = {"filter": filter_str, "pageSize": 1000}
         points: list[dict] = []
+
         while True:
+            # Get page of data points
             r = await client.get(url, headers=headers, params=params)
             r.raise_for_status()
+
+            # Set parsed response body
             body = r.json()
             points.extend(body.get("dataPoints", []))
+
+            # Get next page token if present
             token = body.get("nextPageToken")
             if not token:
                 break
+
+            # Set page token for next request
             params["pageToken"] = str(token)
+
         # Return all collected data points
         return points
 
@@ -92,6 +118,8 @@ class GoogleHealthClient(WearableDataProvider):
     ) -> list[dict]:
         """Fetch one rolled-up data point per day for a given type and date range."""
         url = f"{GOOGLE_HEALTH_BASE_URL}/users/me/dataTypes/{data_type}/dataPoints:dailyRollUp"
+
+        # Set request body with date range and daily window
         body = {
             "range": {
                 "startTime": f"{start.isoformat()}T00:00:00Z",
@@ -99,8 +127,11 @@ class GoogleHealthClient(WearableDataProvider):
             },
             "windowSizeDays": 1,
         }
+
+        # Get daily roll-up response
         r = await client.post(url, headers=headers, json=body)
         r.raise_for_status()
+
         # Return daily rolled-up data points
         return list(r.json().get("dataPoints", []))
 
@@ -116,31 +147,43 @@ def _build_metrics(
 ) -> list[WearableDailyMetrics]:
     """Map raw API data points to one WearableDailyMetrics per day in the range."""
     # Index daily data types by date
+    # Set HRV lookup keyed by date
     hrv_by_date = {
         _date_from_struct(p["dailyHeartRateVariability"]["date"]): p
         for p in hrv_points
         if "dailyHeartRateVariability" in p
     }
+
+    # Set RHR lookup keyed by date
     rhr_by_date = {
         _date_from_struct(p["dailyRestingHeartRate"]["date"]): p
         for p in rhr_points
         if "dailyRestingHeartRate" in p
     }
+
+    # Set steps lookup keyed by date
     steps_by_date = {_date_from_steps(p): p for p in steps_points if "steps" in p}
 
     # Index sleep sessions by wake-up date; prefer the longest session when multiple exist
+    # Set sleep lookup keyed by wake date
     sleep_by_date: dict[date, dict] = {}
     for p in sleep_points:
         s = p.get("sleep", {})
         end_time_str = s.get("interval", {}).get("endTime")
         if not end_time_str:
             continue
+
+        # Get wake-up date for this session
         day = _parse_ts(end_time_str).date()
+
+        # Get existing session for this date if any
         existing = sleep_by_date.get(day)
         if existing is None or _sleep_minutes(s) > _sleep_minutes(existing.get("sleep", {})):
+            # Set longest sleep session for this date
             sleep_by_date[day] = p
 
     # Build one metric per day in the inclusive range
+    # Accumulates per-day metrics
     result: list[WearableDailyMetrics] = []
     day = start
     while day <= end:
@@ -154,6 +197,7 @@ def _build_metrics(
             )
         )
         day += timedelta(days=1)
+
     # Return per-day metrics for the full range
     return result
 
@@ -170,7 +214,10 @@ def _build_day(
     # Extract HRV RMSSD — deep-sleep value preferred; fall back to daily average
     hrv: float | None = None
     if hrv_point:
+        # Get HRV data object
         d = hrv_point["dailyHeartRateVariability"]
+
+        # Set HRV value, preferring deep-sleep RMSSD
         hrv = (
             d.get("deepSleepRootMeanSquareOfSuccessiveDifferencesMilliseconds")
             or d.get("averageHeartRateVariabilityMilliseconds")
@@ -179,13 +226,19 @@ def _build_day(
     # Extract resting heart rate
     rhr: float | None = None
     if rhr_point:
+        # Get beats-per-minute value
         bpm = rhr_point["dailyRestingHeartRate"].get("beatsPerMinute")
+
+        # Set RHR as float or None
         rhr = float(bpm) if bpm is not None else None
 
     # Extract step count
     steps: int | None = None
     if steps_point:
+        # Get raw step count value
         count = steps_point["steps"].get("count")
+
+        # Set step count as int or None
         steps = int(count) if count is not None else None
 
     # Extract sleep metrics from session summary and stages
@@ -195,28 +248,47 @@ def _build_day(
     wake_time: time | None = None
     waso: float | None = None
     if sleep_point:
+        # Get sleep session data
         s = sleep_point["sleep"]
+
+        # Get sleep summary dict
         summary = s.get("summary", {})
+
+        # Set minutes asleep
         minutes_asleep = int(summary["minutesAsleep"]) if summary.get("minutesAsleep") else 0
+
+        # Set total minutes in the sleep period
         minutes_in_period = (
             int(summary["minutesInSleepPeriod"]) if summary.get("minutesInSleepPeriod") else 0
         )
+
+        # Set minutes awake (WASO)
         minutes_awake = int(summary["minutesAwake"]) if summary.get("minutesAwake") else 0
 
         if minutes_asleep:
+            # Set sleep duration in hours
             sleep_hours = minutes_asleep / 60
         if minutes_asleep and minutes_in_period:
+            # Set sleep efficiency %
             sleep_efficiency = minutes_asleep / minutes_in_period * 100
         if minutes_awake:
+            # Set wake-after-sleep-onset in minutes
             waso = float(minutes_awake)
 
         # Sleep onset = start of first asleep stage; wake time = end of sleep session
+        # Get list of sleep stage segments
         stages = s.get("stages", [])
+
+        # Get first asleep stage
         first_asleep = next((st for st in stages if st.get("type") in _ASLEEP_TYPES), None)
         if first_asleep:
+            # Set sleep onset time
             sleep_onset = _parse_ts(first_asleep["startTime"]).replace(tzinfo=None).timetz()
+
+        # Get sleep session end timestamp
         end_str = s.get("interval", {}).get("endTime")
         if end_str:
+            # Set wake time
             wake_time = _parse_ts(end_str).replace(tzinfo=None).timetz()
 
     # Return daily metrics domain object

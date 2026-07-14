@@ -61,6 +61,7 @@ async def submit(
             is_sick=body.is_sick,
         )
     )
+
     # Return the saved response
     return QuestionnaireResponseOut(
         date=body.date,
@@ -85,7 +86,8 @@ async def get_by_date(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="No response for this date"
         )
-    # Return the response
+
+    # Return serialized questionnaire response
     return QuestionnaireResponseOut(
         date=response.date,
         fatigue=response.fatigue,

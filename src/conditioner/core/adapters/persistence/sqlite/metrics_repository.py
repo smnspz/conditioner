@@ -13,9 +13,11 @@ class SqliteMetricsRepository(MetricsRepository):
     """SQLite-backed implementation of MetricsRepository."""
 
     def __init__(self, db_path: str) -> None:
+        # Initializations
         self._db_path = db_path
 
     async def save(self, metrics: WearableDailyMetrics) -> None:
+        """Upsert a day's wearable metrics for a user."""
         async with connect(self._db_path) as conn:
             await conn.execute(
                 """
@@ -57,18 +59,26 @@ class SqliteMetricsRepository(MetricsRepository):
             await conn.commit()
 
     async def get_by_date(self, user_id: str, day: date) -> WearableDailyMetrics | None:
+        """Fetch wearable metrics for a single day."""
         async with connect(self._db_path) as conn:
+            # Get metrics row for user and date
             cursor = await conn.execute(
                 "SELECT * FROM wearable_daily_metrics WHERE user_id = ? AND date = ?",
                 (user_id, day.isoformat()),
             )
+
+            # Get single result row
             row = await cursor.fetchone()
+
+            # Return domain object or None
             return self._to_domain(row) if row else None
 
     async def get_range(
         self, user_id: str, start: date, end: date
     ) -> list[WearableDailyMetrics]:
+        """Fetch wearable metrics for an inclusive date range, ordered by date."""
         async with connect(self._db_path) as conn:
+            # Get metrics rows for the date range
             cursor = await conn.execute(
                 """
                 SELECT * FROM wearable_daily_metrics
@@ -77,11 +87,17 @@ class SqliteMetricsRepository(MetricsRepository):
                 """,
                 (user_id, start.isoformat(), end.isoformat()),
             )
+
+            # Get all result rows
             rows = await cursor.fetchall()
+
+            # Return list of domain objects
             return [self._to_domain(row) for row in rows]
 
     @staticmethod
     def _to_domain(row: aiosqlite.Row) -> WearableDailyMetrics:
+        """Map a database row to a WearableDailyMetrics domain object."""
+        # Return mapped wearable metrics domain object
         return WearableDailyMetrics(
             user_id=row["user_id"],
             date=date.fromisoformat(row["date"]),

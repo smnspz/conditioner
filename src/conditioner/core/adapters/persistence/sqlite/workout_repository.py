@@ -17,9 +17,11 @@ class SqliteWorkoutRepository(WorkoutRepository):
     """
 
     def __init__(self, db_path: str) -> None:
+        # Initializations
         self._db_path = db_path
 
     async def save(self, workout: Workout) -> None:
+        """Upsert a workout plan, replacing all sessions and exercises wholesale."""
         async with connect(self._db_path) as conn:
             await conn.execute(
                 """
@@ -66,37 +68,59 @@ class SqliteWorkoutRepository(WorkoutRepository):
             await conn.commit()
 
     async def get_by_id(self, workout_id: str) -> Workout | None:
+        """Fetch a workout plan by its unique ID, including all sessions and exercises."""
         async with connect(self._db_path) as conn:
+            # Get workout row by ID
             cursor = await conn.execute("SELECT * FROM workouts WHERE id = ?", (workout_id,))
+
+            # Get single result row
             row = await cursor.fetchone()
             if not row:
                 return None
+
+            # Return mapped workout domain object
             return await self._to_domain(conn, row)
 
     async def get_by_week(self, user_id: str, week_start: date) -> Workout | None:
+        """Fetch a user's workout plan for a given week start date."""
         async with connect(self._db_path) as conn:
+            # Get workout row for user and week
             cursor = await conn.execute(
                 "SELECT * FROM workouts WHERE user_id = ? AND week_start = ?",
                 (user_id, week_start.isoformat()),
             )
+
+            # Get single result row
             row = await cursor.fetchone()
             if not row:
                 return None
+
+            # Return mapped workout domain object
             return await self._to_domain(conn, row)
 
     @staticmethod
     async def _to_domain(conn: aiosqlite.Connection, workout_row: aiosqlite.Row) -> Workout:
+        """Reconstruct a full Workout aggregate from the workout, sessions, and exercises rows."""
+        # Get session rows for this workout
         session_cursor = await conn.execute(
             "SELECT * FROM sessions WHERE workout_id = ? ORDER BY date", (workout_row["id"],)
         )
+
+        # Get all session rows
         session_rows = await session_cursor.fetchall()
 
+        # Accumulates built Session objects
         sessions: list[Session] = []
         for session_row in session_rows:
+            # Get exercise rows for this session
             exercise_cursor = await conn.execute(
                 "SELECT * FROM exercises WHERE session_id = ?", (session_row["id"],)
             )
+
+            # Get all exercise rows
             exercise_rows = await exercise_cursor.fetchall()
+
+            # Build Exercise objects from rows
             exercises = [
                 Exercise(
                     id=exercise_row["id"],
@@ -118,6 +142,7 @@ class SqliteWorkoutRepository(WorkoutRepository):
                 )
             )
 
+        # Return fully reconstructed workout aggregate
         return Workout(
             id=workout_row["id"],
             user_id=workout_row["user_id"],

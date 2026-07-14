@@ -40,8 +40,10 @@ def login(
     state_service: Annotated[OAuthStateService, Depends(get_oauth_state_service)],
 ) -> RedirectResponse:
     """Redirect browser to Google's OAuth consent screen."""
+    # Get signed state token for CSRF protection
     state = state_service.issue()
-    # Get redirect URL to Google OAuth
+
+    # Return redirect to Google OAuth consent screen
     return RedirectResponse(url=oauth_provider.get_authorization_url(state))
 
 
@@ -62,15 +64,23 @@ async def callback(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid or expired OAuth state"
         ) from exc
 
+    # Get Google tokens from auth code
     google_tokens = await oauth_provider.exchange_code(code)
+
+    # Get user email from Google
     email = await oauth_provider.get_user_email(google_tokens.access_token)
 
+    # Get existing user by email
     user = await user_repository.get_by_email(email)
     if user is None:
+        # Create new user
         user = User(id=str(uuid.uuid4()), email=email, created_at=datetime.now(UTC))
         await user_repository.save(user)
 
+    # Get stored credentials for this user
     previous_credentials = await credentials_repository.get_by_user_id(user.id)
+
+    # Set refresh token, falling back to stored one if Google omitted it
     refresh_token = google_tokens.refresh_token or (
         previous_credentials.refresh_token if previous_credentials else None
     )
@@ -90,9 +100,10 @@ async def callback(
         )
     )
 
-    # Issue our Bearer token
+    # Get signed Bearer token for this user
     token = access_token_service.issue(user.id)
-    # Return success page with token stored in localStorage
+
+    # Return authentication success page with token stored in localStorage
     return HTMLResponse(
         content=f"""<!DOCTYPE html>
 <html>
