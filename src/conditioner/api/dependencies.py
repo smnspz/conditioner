@@ -9,9 +9,13 @@ from conditioner.core.adapters.google.oauth_client import GoogleOAuthClient
 from conditioner.core.adapters.persistence.sqlite.credentials_repository import (
     SqliteCredentialsRepository,
 )
+from conditioner.core.adapters.persistence.sqlite.questionnaire_repository import (
+    SqliteQuestionnaireRepository,
+)
 from conditioner.core.adapters.persistence.sqlite.user_repository import SqliteUserRepository
 from conditioner.core.interfaces.credentials_repository import CredentialsRepository
 from conditioner.core.interfaces.google_oauth_provider import GoogleOAuthProvider
+from conditioner.core.interfaces.questionnaire_repository import QuestionnaireRepository
 from conditioner.core.interfaces.user_repository import UserRepository
 from conditioner.core.services.access_tokens import AccessTokenService, InvalidAccessToken
 from conditioner.core.services.jwt_tokens import JwtSigner
@@ -62,6 +66,12 @@ def get_oauth_state_service(
     signer: Annotated[JwtSigner, Depends(get_jwt_signer)],
 ) -> OAuthStateService:
     return OAuthStateService(signer)
+
+
+def get_questionnaire_repository(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> QuestionnaireRepository:
+    return SqliteQuestionnaireRepository(settings.database_path)
 
 
 async def get_current_user_id(

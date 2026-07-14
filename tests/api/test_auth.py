@@ -72,11 +72,23 @@ def client(db_path: str, fake_oauth_provider: FakeGoogleOAuthProvider) -> Iterat
         app.dependency_overrides.clear()
 
 
-def test_login_returns_authorization_url_with_state(client: TestClient) -> None:
-    response = client.get("/auth/google/login")
+def test_login_redirects_to_google_with_state(client: TestClient) -> None:
+    response = client.get("/auth/google/login", follow_redirects=False)
 
+    assert response.status_code in (302, 307)
+    assert "state=" in response.headers["location"]
+
+
+def _token_from_callback(client: TestClient, state: str, code: str = "auth-code") -> str:
+    """Complete the OAuth callback and extract the Bearer token from the success page."""
+    response = client.get("/auth/google/callback", params={"code": code, "state": state})
     assert response.status_code == 200
-    assert "state=" in response.json()["authorization_url"]
+    # Token is embedded in the HTML success page via localStorage.setItem
+    html = response.text
+    marker = 'localStorage.setItem("access_token", "'
+    start = html.index(marker) + len(marker)
+    end = html.index('"', start)
+    return html[start:end]
 
 
 def test_callback_creates_user_and_returns_bearer_token(
@@ -84,12 +96,9 @@ def test_callback_creates_user_and_returns_bearer_token(
 ) -> None:
     state = OAuthStateService(_JWT_SIGNER).issue()
 
-    response = client.get("/auth/google/callback", params={"code": "auth-code", "state": state})
+    token = _token_from_callback(client, state)
 
-    assert response.status_code == 200
-    body = response.json()
-    assert body["token_type"] == "bearer"
-    assert AccessTokenService(_JWT_SIGNER).verify(body["access_token"])
+    assert AccessTokenService(_JWT_SIGNER).verify(token)
     assert fake_oauth_provider.exchanged_codes == ["auth-code"]
 
 
@@ -99,16 +108,10 @@ def test_callback_reuses_existing_user_on_second_login(
     state_service = OAuthStateService(_JWT_SIGNER)
     access_service = AccessTokenService(_JWT_SIGNER)
 
-    first = client.get(
-        "/auth/google/callback", params={"code": "auth-code", "state": state_service.issue()}
-    )
-    second = client.get(
-        "/auth/google/callback", params={"code": "auth-code-2", "state": state_service.issue()}
-    )
+    first_token = _token_from_callback(client, state_service.issue(), code="auth-code")
+    second_token = _token_from_callback(client, state_service.issue(), code="auth-code-2")
 
-    first_user_id = access_service.verify(first.json()["access_token"])
-    second_user_id = access_service.verify(second.json()["access_token"])
-    assert first_user_id == second_user_id
+    assert access_service.verify(first_token) == access_service.verify(second_token)
 
 
 def test_callback_rejects_invalid_state(client: TestClient) -> None:
