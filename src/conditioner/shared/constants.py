@@ -1,0 +1,1 @@
+BEARER_TOKEN_SCHEME = "Bearer"

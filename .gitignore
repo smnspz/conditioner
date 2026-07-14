@@ -1,0 +1,10 @@
+# Secrets
+.env
+client_secret*.*
+
+# Python garbage
+__pycache__
+
+# Local database
+data/*.db
+
