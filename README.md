@@ -33,7 +33,7 @@ poetry run yoyo list      # show migration status
 ## Running the API
 
 ```bash
-poetry run uvicorn conditioner.api.main:app --reload
+poetry run uvicorn conditioner.api.main:app --host 0.0.0.0 --port 9876 --reload
 ```
 
 ## Testing
