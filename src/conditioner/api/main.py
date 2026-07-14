@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
-from conditioner.api.auth import router as auth_router
-from conditioner.api.questionnaire import router as questionnaire_router
+from conditioner.api.routes.auth import router as auth_router
+from conditioner.api.routes.questionnaire import router as questionnaire_router
 
 app = FastAPI(title="Conditioner")
 app.include_router(auth_router)

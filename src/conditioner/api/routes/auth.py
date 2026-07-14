@@ -93,7 +93,8 @@ async def callback(
     # Issue our Bearer token
     token = access_token_service.issue(user.id)
     # Return success page with token stored in localStorage
-    return HTMLResponse(content=f"""<!DOCTYPE html>
+    return HTMLResponse(
+        content=f"""<!DOCTYPE html>
 <html>
 <head><title>Conditioner — Authenticated</title></head>
 <body>
@@ -104,4 +105,5 @@ async def callback(
 </script>
 </body>
 </html>
-""")
+"""
+    )
