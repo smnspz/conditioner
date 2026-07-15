@@ -13,3 +13,5 @@ GOOGLE_FITNESS_SCOPES = [
 ]
 GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 GOOGLE_HEALTH_BASE_URL = "https://health.googleapis.com/v4"
+
+GEMINI_WORKOUT_MODEL = "gemini-3.5-flash"

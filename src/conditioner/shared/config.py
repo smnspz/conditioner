@@ -15,6 +15,7 @@ class Settings(BaseSettings):
         jwt_secret_key: Symmetric key used to sign our own Bearer tokens and OAuth state.
         token_encryption_key: Fernet key used to encrypt stored Google OAuth tokens at rest.
         dev_mode: When true, allows the access-token cookie over plain HTTP (no Secure flag).
+        gemini_api_key: API key for the Gemini API, used to generate workout plans.
     """
 
     database_path: str = "data/conditioner.db"
@@ -23,6 +24,7 @@ class Settings(BaseSettings):
     jwt_secret_key: str
     token_encryption_key: str
     dev_mode: bool = False
+    gemini_api_key: str
 
     model_config = SettingsConfigDict(env_file=".env", env_prefix="CONDITIONER_")
 

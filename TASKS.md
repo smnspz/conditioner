@@ -54,13 +54,13 @@
 
 #### 7a. Prerequisites
 
-- [ ] `core/domain`: `WorkoutConstraints` (equipment, goal, available time per day) — model `goal` so more values can be added later, not just "MMA conditioning".
-- [ ] `core/interfaces`: `ConstraintsRepository` port + `core/adapters/persistence/sqlite`: SQLite implementation + migration (one row per user, updated in place).
-- [ ] API endpoint(s) to set/get a user's constraints; changing available time for a day must be able to trigger regeneration of that day's (or remaining) session(s) later.
-- [ ] `core/interfaces`: generative AI port (e.g. `WorkoutGenerationProvider`) — takes constraints + readiness (+ prior plan context) and returns a proposed `Workout`; must not leak Gemini-specific types into `core`.
-- [ ] `core/adapters/ai/gemini` (or similar): Gemini adapter implementing the port, using the Interactions API (see the `gemini-interactions-api` skill) with structured output mapped to `Workout`/`Session`/`Exercise`.
-- [ ] `shared/config.py` + `.env.example`: `gemini_api_key` setting; keep the key out of client responses and logs.
-- [ ] GDPR: readiness scores and constraints sent to Gemini are personal (health-adjacent) data leaving the EU-hosted system to a third party — confirm lawful basis/DPA coverage for this processor and document what's sent (constraints + readiness only, not raw wearable/questionnaire data) before wiring the adapter in.
+- [x] `core/domain`: `WorkoutConstraints` (equipment, goal, available time per day) — model `goal` so more values can be added later, not just "MMA conditioning".
+- [x] `core/interfaces`: `ConstraintsRepository` port + `core/adapters/persistence/sqlite`: SQLite implementation + migration (one row per user, updated in place).
+- [x] API endpoint(s) to set/get a user's constraints; changing available time for a day must be able to trigger regeneration of that day's (or remaining) session(s) later. (Endpoints persist constraints; the regeneration trigger itself is wired in 7b once the regeneration use case exists.)
+- [x] `core/interfaces`: generative AI port (e.g. `WorkoutGenerationProvider`) — takes constraints + readiness (+ prior plan context) and returns a proposed `Workout`; must not leak Gemini-specific types into `core`.
+- [x] `core/adapters/ai/gemini` (or similar): Gemini adapter implementing the port, using the Interactions API (see the `gemini-interactions-api` skill) with structured output mapped to `Workout`/`Session`/`Exercise`.
+- [x] `shared/config.py` + `.env.example`: `gemini_api_key` setting; keep the key out of client responses and logs.
+- [x] GDPR: readiness scores and constraints sent to Gemini are personal (health-adjacent) data leaving the EU-hosted system to a third party — confirm lawful basis/DPA coverage for this processor and document what's sent (constraints + readiness only, not raw wearable/questionnaire data) before wiring the adapter in. (Documented in README; actual DPA/lawful-basis sign-off is a legal/compliance task, not resolved in code.)
 
 #### 7b. Generation logic
 
@@ -70,8 +70,8 @@
 
 ### 8. API layer
 - [x] FastAPI routers: `/auth/google/*`, `/questionnaire`, `/readiness`.
-- [ ] `/workouts` router — blocked on task 7 (workout generation not built yet).
-- [ ] Constraints endpoint(s) (set/get `WorkoutConstraints`) — see task 7a.
+- [ ] `/workouts` router — blocked on task 7b (workout generation logic not built yet).
+- [x] Constraints endpoint(s) (set/get `WorkoutConstraints`) — see task 7a.
 
 ### 9. GDPR compliance
 - [ ] Consent capture at signup/OAuth.

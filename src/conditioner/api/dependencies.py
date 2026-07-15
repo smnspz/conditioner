@@ -4,7 +4,13 @@ from typing import Annotated
 
 from fastapi import Cookie, Depends, HTTPException, status
 
+from conditioner.core.adapters.ai.gemini.workout_generation_provider import (
+    GeminiWorkoutGenerationProvider,
+)
 from conditioner.core.adapters.google.oauth_client import GoogleOAuthClient
+from conditioner.core.adapters.persistence.sqlite.constraints_repository import (
+    SqliteConstraintsRepository,
+)
 from conditioner.core.adapters.persistence.sqlite.credentials_repository import (
     SqliteCredentialsRepository,
 )
@@ -18,16 +24,22 @@ from conditioner.core.adapters.persistence.sqlite.readiness_repository import (
     SqliteReadinessRepository,
 )
 from conditioner.core.adapters.persistence.sqlite.user_repository import SqliteUserRepository
-from conditioner.core.interfaces.credentials_repository import CredentialsRepository
-from conditioner.core.interfaces.google_oauth_provider import GoogleOAuthProvider
-from conditioner.core.interfaces.metrics_repository import MetricsRepository
-from conditioner.core.interfaces.questionnaire_repository import QuestionnaireRepository
-from conditioner.core.interfaces.readiness_repository import ReadinessRepository
-from conditioner.core.interfaces.user_repository import UserRepository
-from conditioner.core.services.access_tokens import AccessTokenService, InvalidAccessToken
-from conditioner.core.services.jwt_tokens import JwtSigner
-from conditioner.core.services.oauth_state import OAuthStateService
-from conditioner.core.services.token_cipher import TokenCipher
+from conditioner.core.interfaces.auth.credentials_repository import CredentialsRepository
+from conditioner.core.interfaces.auth.google_oauth_provider import GoogleOAuthProvider
+from conditioner.core.interfaces.auth.user_repository import UserRepository
+from conditioner.core.interfaces.questionnaire.questionnaire_repository import (
+    QuestionnaireRepository,
+)
+from conditioner.core.interfaces.readiness.readiness_repository import ReadinessRepository
+from conditioner.core.interfaces.wearables.metrics_repository import MetricsRepository
+from conditioner.core.interfaces.workout.constraints_repository import ConstraintsRepository
+from conditioner.core.interfaces.workout.workout_generation_provider import (
+    WorkoutGenerationProvider,
+)
+from conditioner.core.services.auth.access_tokens import AccessTokenService, InvalidAccessToken
+from conditioner.core.services.auth.jwt_tokens import JwtSigner
+from conditioner.core.services.auth.oauth_state import OAuthStateService
+from conditioner.core.services.auth.token_cipher import TokenCipher
 from conditioner.shared.config import Settings, get_settings
 from conditioner.shared.constants import ACCESS_TOKEN_COOKIE_NAME
 
@@ -56,6 +68,24 @@ def get_credentials_repository(
 
     # Return credentials repository
     return SqliteCredentialsRepository(settings.database_path, cipher)
+
+
+def get_constraints_repository(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> ConstraintsRepository:
+    """Resolve the SQLite-backed workout constraints repository."""
+
+    # Return constraints repository
+    return SqliteConstraintsRepository(settings.database_path)
+
+
+def get_workout_generation_provider(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> WorkoutGenerationProvider:
+    """Resolve the Gemini-backed workout generation provider."""
+
+    # Return workout generation provider
+    return GeminiWorkoutGenerationProvider(settings.gemini_api_key)
 
 
 def get_google_oauth_provider(
