@@ -13,3 +13,6 @@ GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 GOOGLE_HEALTH_BASE_URL = "https://health.googleapis.com/v4"
 
 GEMINI_WORKOUT_MODEL = "gemini-3.5-flash"
+
+CLOUDFLARE_AI_BASE_URL = "https://api.cloudflare.com/client/v4"
+CLOUDFLARE_WORKOUT_MODEL = "@cf/meta/llama-3.1-8b-instruct"
