@@ -1,10 +1,8 @@
 """Walk the full app flow for an already-authenticated user: constraints, wearable
 metrics, questionnaire, readiness, then weekly workout generation.
 
-There is no HTTP endpoint yet to ingest wearable metrics (that happens via a
-background Google Health sync, not built as an on-demand route), so this
-script seeds them directly through SqliteMetricsRepository. Everything else
-goes through the real HTTP API.
+Wearable metrics are seeded directly via SqliteMetricsRepository; everything
+else goes through the real HTTP API.
 
 Usage:
     poetry run python scripts/e2e_flow.py <access_token> [base_url]
@@ -27,7 +25,7 @@ from conditioner.core.domain.wearables.wearable_metrics import WearableDailyMetr
 from conditioner.core.services.auth.access_tokens import AccessTokenService
 from conditioner.core.services.auth.jwt_tokens import JwtSigner
 from conditioner.shared.config import get_settings
-from conditioner.shared.constants import ACCESS_TOKEN_COOKIE_NAME
+from conditioner.shared.constants import Constants
 
 
 async def _seed_wearable_history(user_id: str, today: date) -> None:
@@ -58,8 +56,7 @@ def _check(response: httpx.Response, step: str) -> httpx.Response:
 async def run(token: str, base_url: str) -> None:
     today = date.today()
     week_start = today - timedelta(days=today.weekday())
-    # Weekly generation requires a readiness score dated exactly at week_start
-    # (not just "today's"), so that's the date we submit the questionnaire for.
+    # Weekly generation requires a readiness score dated at week_start
     readiness_day = week_start
 
     # Get the user id out of the access token so we can seed metrics for the right user
@@ -69,7 +66,7 @@ async def run(token: str, base_url: str) -> None:
     print(f"Seeded 15 days of wearable metrics for user {user_id}")
 
     async with httpx.AsyncClient(
-        base_url=base_url, cookies={ACCESS_TOKEN_COOKIE_NAME: token}, timeout=180.0
+        base_url=base_url, cookies={Constants.access_token_cookie_name(): token}, timeout=180.0
     ) as client:
         _check(
             await client.put(

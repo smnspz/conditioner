@@ -8,7 +8,7 @@ import httpx
 from conditioner.core.domain.auth.credentials import GoogleCredentials
 from conditioner.core.domain.wearables.wearable_metrics import WearableDailyMetrics
 from conditioner.core.interfaces.wearables.wearable_provider import WearableDataProvider
-from conditioner.shared.constants import GOOGLE_HEALTH_BASE_URL
+from conditioner.shared.constants import Constants
 
 # Sleep stage types that count as time asleep
 _ASLEEP_TYPES = frozenset({"LIGHT", "DEEP", "REM", "ASLEEP"})
@@ -44,8 +44,7 @@ class GoogleHealthClient(WearableDataProvider):
         end_excl = end + timedelta(days=1)
 
         async with httpx.AsyncClient(transport=self._transport) as client:
-            # Set HRV filter string for the date range (filter paths are snake_case,
-            # unlike the camelCase JSON response bodies)
+            # Build HRV filter string for the date range
             hrv_filter = (
                 f'daily_heart_rate_variability.date >= "{start}"'
                 f' AND daily_heart_rate_variability.date < "{end_excl}"'
@@ -66,8 +65,7 @@ class GoogleHealthClient(WearableDataProvider):
             # Query from previous evening to capture sessions that start before midnight
             prev_evening = (start - timedelta(days=1)).isoformat()
 
-            # Set sleep filter string spanning overnight sessions. start_time isn't a
-            # filterable member for this data type — only end_time is.
+            # Build sleep filter string spanning overnight sessions
             sleep_filter = (
                 f'sleep.interval.end_time >= "{prev_evening}T18:00:00Z"'
                 f' AND sleep.interval.end_time < "{end_excl.isoformat()}T12:00:00Z"'
@@ -92,7 +90,7 @@ class GoogleHealthClient(WearableDataProvider):
         """Fetch all data points for a data type, following pagination."""
 
         # Initializations
-        url = f"{GOOGLE_HEALTH_BASE_URL}/users/me/dataTypes/{data_type}/dataPoints"
+        url = f"{Constants.google_health_base_url()}/users/me/dataTypes/{data_type}/dataPoints"
         params: dict[str, str | int] = {"filter": filter_str, "pageSize": 1000}
         points: list[JsonDict] = []
 
@@ -126,10 +124,10 @@ class GoogleHealthClient(WearableDataProvider):
     ) -> list[JsonDict]:
         """Fetch one rolled-up data point per day for a given type and date range."""
 
-        url = f"{GOOGLE_HEALTH_BASE_URL}/users/me/dataTypes/{data_type}/dataPoints:dailyRollUp"
+        base = Constants.google_health_base_url()
+        url = f"{base}/users/me/dataTypes/{data_type}/dataPoints:dailyRollUp"
 
-        # Set request body with date range (as CivilDateTime, not RFC-3339 timestamps) and
-        # daily window
+        # Set request body with date range and daily window
         body = {
             "range": {
                 "start": {"date": _civil_date(start)},

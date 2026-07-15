@@ -22,7 +22,7 @@ from conditioner.core.services.auth.access_tokens import AccessTokenService
 from conditioner.core.services.auth.jwt_tokens import JwtSigner
 from conditioner.core.services.auth.oauth_state import OAuthStateService
 from conditioner.core.services.auth.token_cipher import TokenCipher
-from conditioner.shared.constants import ACCESS_TOKEN_COOKIE_NAME
+from conditioner.shared.constants import Constants
 
 _JWT_SIGNER = JwtSigner("test-secret")
 
@@ -84,7 +84,7 @@ def _token_from_callback(client: TestClient, state: str, code: str = "auth-code"
     """Complete the OAuth callback and extract the token from the HttpOnly cookie."""
     response = client.get("/auth/google/callback", params={"code": code, "state": state})
     assert response.status_code == 200
-    return response.cookies[ACCESS_TOKEN_COOKIE_NAME]
+    return response.cookies[Constants.access_token_cookie_name()]
 
 
 def test_callback_creates_user_and_returns_bearer_token(

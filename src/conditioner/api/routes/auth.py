@@ -22,7 +22,7 @@ from conditioner.core.interfaces.auth.user_repository import UserRepository
 from conditioner.core.services.auth.access_tokens import AccessTokenService
 from conditioner.core.services.auth.oauth_state import InvalidOAuthState, OAuthStateService
 from conditioner.shared.config import Settings, get_settings
-from conditioner.shared.constants import ACCESS_TOKEN_COOKIE_NAME
+from conditioner.shared.constants import Constants
 
 router = APIRouter(prefix="/auth/google", tags=["auth"])
 
@@ -111,7 +111,7 @@ async def callback(
 """
     )
     response.set_cookie(
-        key=ACCESS_TOKEN_COOKIE_NAME,
+        key=Constants.access_token_cookie_name(),
         value=token,
         httponly=True,
         secure=not settings.dev_mode,

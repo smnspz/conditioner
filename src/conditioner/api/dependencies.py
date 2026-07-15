@@ -52,7 +52,7 @@ from conditioner.core.services.auth.jwt_tokens import JwtSigner
 from conditioner.core.services.auth.oauth_state import OAuthStateService
 from conditioner.core.services.auth.token_cipher import TokenCipher
 from conditioner.shared.config import Settings, WorkoutGenerationEngine, get_settings
-from conditioner.shared.constants import ACCESS_TOKEN_COOKIE_NAME
+from conditioner.shared.constants import Constants
 
 
 def get_user_repository(
@@ -197,7 +197,7 @@ def get_readiness_repository(
 
 async def get_current_user_id(
     token_service: Annotated[AccessTokenService, Depends(get_access_token_service)],
-    access_token: Annotated[str | None, Cookie(alias=ACCESS_TOKEN_COOKIE_NAME)] = None,
+    access_token: Annotated[str | None, Cookie(alias=Constants.access_token_cookie_name())] = None,
 ) -> str:
     """Extract and verify the user ID from the access token cookie."""
 

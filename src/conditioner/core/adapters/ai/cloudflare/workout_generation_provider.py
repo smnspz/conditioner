@@ -16,11 +16,7 @@ from conditioner.core.domain.workout.workout import Workout
 from conditioner.core.interfaces.workout.workout_generation_provider import (
     WorkoutGenerationProvider,
 )
-from conditioner.shared.constants import (
-    CLOUDFLARE_AI_BASE_URL,
-    CLOUDFLARE_WORKOUT_MAX_TOKENS,
-    CLOUDFLARE_WORKOUT_MODEL,
-)
+from conditioner.shared.constants import Constants
 
 
 class CloudflareAIWorkoutGenerationProvider(WorkoutGenerationProvider):
@@ -33,7 +29,8 @@ class CloudflareAIWorkoutGenerationProvider(WorkoutGenerationProvider):
     def __init__(self, account_id: str, api_token: str) -> None:
         # Initializations
         self._url = (
-            f"{CLOUDFLARE_AI_BASE_URL}/accounts/{account_id}/ai/run/{CLOUDFLARE_WORKOUT_MODEL}"
+            f"{Constants.cloudflare_ai_base_url()}/accounts/{account_id}"
+            f"/ai/run/{Constants.cloudflare_workout_model()}"
         )
         self._headers = {"Authorization": f"Bearer {api_token}"}
 
@@ -65,14 +62,12 @@ class CloudflareAIWorkoutGenerationProvider(WorkoutGenerationProvider):
                         "type": "json_schema",
                         "json_schema": schema_cls.model_json_schema(),
                     },
-                    "max_tokens": CLOUDFLARE_WORKOUT_MAX_TOKENS,
+                    "max_tokens": Constants.cloudflare_workout_max_tokens(),
                 },
             )
             response.raise_for_status()
 
-        # Set the parsed plan from the model's JSON output. JSON mode on /ai/run/{model}
-        # returns the structured output as a JSON-formatted string in some responses and
-        # an already-parsed object in others — handle both.
+        # Parse the model's JSON output; handle both string and already-parsed responses
         result = response.json()["result"]["response"]
         plan = (
             schema_cls.model_validate_json(result)

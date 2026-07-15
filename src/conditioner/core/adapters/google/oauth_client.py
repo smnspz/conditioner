@@ -7,11 +7,7 @@ import httpx
 
 from conditioner.core.domain.auth.google_token import GoogleTokenResponse
 from conditioner.core.interfaces.auth.google_oauth_provider import GoogleOAuthProvider
-from conditioner.shared.constants import (
-    GOOGLE_HEALTH_SCOPES,
-    GOOGLE_IDENTITY_SCOPES,
-    GOOGLE_USERINFO_URL,
-)
+from conditioner.shared.constants import Constants
 
 
 class GoogleOAuthClient(GoogleOAuthProvider):
@@ -43,7 +39,9 @@ class GoogleOAuthClient(GoogleOAuthProvider):
             "client_id": self._client_id,
             "redirect_uri": self._redirect_uri,
             "response_type": "code",
-            "scope": " ".join(GOOGLE_IDENTITY_SCOPES + GOOGLE_HEALTH_SCOPES),
+            "scope": " ".join(
+                Constants.google_identity_scopes() + Constants.google_health_scopes()
+            ),
             "access_type": "offline",
             "prompt": "consent",
             "state": state,
@@ -91,7 +89,7 @@ class GoogleOAuthClient(GoogleOAuthProvider):
         async with httpx.AsyncClient(transport=self._transport) as client:
             # Get userinfo response from Google
             response = await client.get(
-                GOOGLE_USERINFO_URL,
+                Constants.google_userinfo_url(),
                 headers={"Authorization": f"Bearer {access_token}"},
             )
             response.raise_for_status()

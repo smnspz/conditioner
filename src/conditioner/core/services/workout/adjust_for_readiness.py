@@ -6,8 +6,7 @@ from datetime import date
 from conditioner.core.domain.readiness.readiness import ReadinessZone
 from conditioner.core.domain.workout.workout import Session, Workout
 
-# Load multiplier applied to each remaining session's sets/reps/duration/target_load per zone.
-# PEAK/GOOD keep the AI-prescribed load; MODERATE/LIGHT scale it down; REST clears the session.
+# Load multiplier applied per readiness zone.
 _LOAD_FACTOR_BY_ZONE: dict[ReadinessZone, float] = {
     ReadinessZone.PEAK: 1.0,
     ReadinessZone.GOOD: 1.0,

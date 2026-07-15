@@ -18,7 +18,7 @@ from conditioner.core.domain.workout.workout import Workout
 from conditioner.core.interfaces.workout.workout_generation_provider import (
     WorkoutGenerationProvider,
 )
-from conditioner.shared.constants import GEMINI_WORKOUT_MODEL
+from conditioner.shared.constants import Constants
 
 
 class GeminiWorkoutGenerationProvider(WorkoutGenerationProvider):
@@ -46,7 +46,7 @@ class GeminiWorkoutGenerationProvider(WorkoutGenerationProvider):
 
         # Get the model's structured response for this week's constraints and readiness
         interaction = await self._client.aio.interactions.create(
-            model=GEMINI_WORKOUT_MODEL,
+            model=Constants.gemini_workout_model(),
             input=build_prompt(week_start, constraints, readiness),
             response_format={
                 "type": "text",
@@ -55,8 +55,7 @@ class GeminiWorkoutGenerationProvider(WorkoutGenerationProvider):
             },
         )
 
-        # Set the parsed plan from the model's JSON output; requests are always
-        # non-streaming here, so the response is always a single Interaction
+        # Parse the model's JSON output into the plan
         output_text = cast(Interaction, interaction).output_text
         plan = schema_cls.model_validate_json(output_text or "")
 

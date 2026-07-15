@@ -10,11 +10,7 @@ from conditioner.core.domain.readiness.readiness import ReadinessScore, Readines
 from conditioner.core.domain.workout.constraints import WorkoutConstraints
 from conditioner.core.domain.workout.workout import Exercise, ExerciseModality, Session
 
-# Operational-zone recommendations, per CLAUDE.md's readiness zone table. The model was
-# not reliably inferring appropriate volume/intensity from a bare "62/100 (moderate)" —
-# GOOD and MODERATE produced identical plans, LIGHT got more volume than PEAK, and REST
-# still included plyometric/explosive movements. Spelling out what each zone requires
-# fixed this in testing.
+# Per-zone volume/intensity guidance injected into the prompt.
 _ZONE_GUIDANCE: dict[ReadinessZone, str] = {
     ReadinessZone.PEAK: (
         "Readiness is peak: full volume and intensity, hard sessions are appropriate."
@@ -35,22 +31,15 @@ _ZONE_GUIDANCE: dict[ReadinessZone, str] = {
     ),
 }
 
-# Prompt/structured-output shape shared by every WorkoutGenerationProvider adapter, so
-# each adapter only owns the mechanics of calling its own AI API.
-#
-# Exercise schema is a discriminated union on modality rather than one model with every
-# field optional. Models are unreliable at following a natural-language instruction like
-# "leave sets/reps null for cardio" — plain optional fields let them omit everything. Making
-# sets/reps and duration_minutes required-per-variant turns that into a syntactic constraint
-# the structured-output engine enforces, which measurably fixed the compliance gap in testing.
+# Structured-output schema shared by all WorkoutGenerationProvider adapters; exercise
+# is a discriminated union on modality.
 
 
 class StrengthExerciseSchema(BaseModel):
     """Structured-output schema for a strength exercise: sets/reps, no duration."""
 
     name: str
-    # Plain str literal, not the ExerciseModality enum — pydantic's discriminated-union
-    # tag matching doesn't coerce a JSON string against a plain (non-str) Enum literal.
+    # Discriminator tag as a plain str literal, not an enum.
     modality: Literal["strength"] = "strength"
     sets: int
     reps: int
@@ -172,7 +161,7 @@ def _to_exercise(
             target_load=schema.target_load,
         )
 
-    # Return cardio/mobility exercise, duration-based rather than sets/reps
+    # Return cardio/mobility exercise
     return Exercise(
         id=str(uuid4()),
         name=schema.name,
