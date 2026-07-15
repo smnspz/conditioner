@@ -1,3 +1,4 @@
+import json
 from datetime import date
 from unittest.mock import AsyncMock, patch
 
@@ -20,38 +21,44 @@ _READINESS = ReadinessScore(
     user_id="user-1", date=date(2026, 7, 13), score=75, zone=ReadinessZone.GOOD
 )
 
+_PLAN = {
+    "sessions": [
+        {
+            "day_offset": 0,
+            "exercises": [
+                {
+                    "name": "Back squat",
+                    "modality": "strength",
+                    "sets": 5,
+                    "reps": 5,
+                    "duration_minutes": None,
+                    "target_load": 80.0,
+                }
+            ],
+        }
+    ]
+}
 
-def _fake_response(result: dict) -> httpx.Response:
+
+def _fake_response(result: dict, *, as_string: bool) -> httpx.Response:
+    # JSON mode on /ai/run/{model} returns the structured output as a JSON-formatted
+    # string under result.response in some responses, an already-parsed object in others.
     return httpx.Response(
         200,
-        json={"result": {"response": result}, "success": True, "errors": [], "messages": []},
+        json={
+            "result": {"response": json.dumps(result) if as_string else result},
+            "success": True,
+            "errors": [],
+            "messages": [],
+        },
         request=httpx.Request("POST", "https://example.test"),
     )
 
 
-async def test_generate_weekly_plan_maps_structured_response_to_workout() -> None:
+async def _assert_maps_plan_to_workout(response: httpx.Response) -> None:
     provider = CloudflareAIWorkoutGenerationProvider(account_id="acct-1", api_token="test-token")
-    plan = {
-        "sessions": [
-            {
-                "day_offset": 0,
-                "exercises": [
-                    {
-                        "name": "Back squat",
-                        "modality": "strength",
-                        "sets": 5,
-                        "reps": 5,
-                        "duration_minutes": None,
-                        "target_load": 80.0,
-                    }
-                ],
-            }
-        ]
-    }
 
-    with patch.object(
-        httpx.AsyncClient, "post", AsyncMock(return_value=_fake_response(plan))
-    ):
+    with patch.object(httpx.AsyncClient, "post", AsyncMock(return_value=response)):
         workout = await provider.generate_weekly_plan(
             user_id="user-1",
             week_start=date(2026, 7, 13),
@@ -71,9 +78,17 @@ async def test_generate_weekly_plan_maps_structured_response_to_workout() -> Non
     assert exercise.target_load == 80.0
 
 
+async def test_generate_weekly_plan_maps_string_encoded_response_to_workout() -> None:
+    await _assert_maps_plan_to_workout(_fake_response(_PLAN, as_string=True))
+
+
+async def test_generate_weekly_plan_maps_object_response_to_workout() -> None:
+    await _assert_maps_plan_to_workout(_fake_response(_PLAN, as_string=False))
+
+
 async def test_generate_weekly_plan_calls_correct_url_with_structured_output_schema() -> None:
     provider = CloudflareAIWorkoutGenerationProvider(account_id="acct-1", api_token="test-token")
-    post_mock = AsyncMock(return_value=_fake_response({"sessions": []}))
+    post_mock = AsyncMock(return_value=_fake_response({"sessions": []}, as_string=True))
 
     with patch.object(httpx.AsyncClient, "post", post_mock):
         await provider.generate_weekly_plan(
@@ -86,8 +101,9 @@ async def test_generate_weekly_plan_calls_correct_url_with_structured_output_sch
     args, kwargs = post_mock.call_args
     assert args[0] == (
         "https://api.cloudflare.com/client/v4/accounts/acct-1/ai/run/"
-        "@cf/google/gemini-3.1-flash-lite"
+        "@cf/meta/llama-3.1-8b-instruct"
     )
     assert kwargs["headers"]["Authorization"] == "Bearer test-token"
     assert kwargs["json"]["response_format"]["type"] == "json_schema"
     assert "sessions" in kwargs["json"]["response_format"]["json_schema"]["properties"]
+    assert kwargs["json"]["max_tokens"] == 4096

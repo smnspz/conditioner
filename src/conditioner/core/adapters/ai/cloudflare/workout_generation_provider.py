@@ -16,7 +16,11 @@ from conditioner.core.domain.workout.workout import Workout
 from conditioner.core.interfaces.workout.workout_generation_provider import (
     WorkoutGenerationProvider,
 )
-from conditioner.shared.constants import CLOUDFLARE_AI_BASE_URL, CLOUDFLARE_WORKOUT_MODEL
+from conditioner.shared.constants import (
+    CLOUDFLARE_AI_BASE_URL,
+    CLOUDFLARE_WORKOUT_MAX_TOKENS,
+    CLOUDFLARE_WORKOUT_MODEL,
+)
 
 
 class CloudflareAIWorkoutGenerationProvider(WorkoutGenerationProvider):
@@ -43,7 +47,7 @@ class CloudflareAIWorkoutGenerationProvider(WorkoutGenerationProvider):
         """Prompt the model for a weekly plan and map the structured response to a Workout."""
 
         # Get the model's structured response for this week's constraints and readiness
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(
                 self._url,
                 headers=self._headers,
@@ -58,12 +62,20 @@ class CloudflareAIWorkoutGenerationProvider(WorkoutGenerationProvider):
                         "type": "json_schema",
                         "json_schema": WeeklyPlanSchema.model_json_schema(),
                     },
+                    "max_tokens": CLOUDFLARE_WORKOUT_MAX_TOKENS,
                 },
             )
             response.raise_for_status()
 
-        # Set the parsed plan from the model's JSON output
-        plan = WeeklyPlanSchema.model_validate(response.json()["result"]["response"])
+        # Set the parsed plan from the model's JSON output. JSON mode on /ai/run/{model}
+        # returns the structured output as a JSON-formatted string in some responses and
+        # an already-parsed object in others — handle both.
+        result = response.json()["result"]["response"]
+        plan = (
+            WeeklyPlanSchema.model_validate_json(result)
+            if isinstance(result, str)
+            else WeeklyPlanSchema.model_validate(result)
+        )
 
         # Return the generated weekly workout, mapped to domain objects
         return Workout(
