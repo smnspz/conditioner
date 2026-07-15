@@ -21,8 +21,6 @@ Copy `.env.example` to `.env` and fill in:
   poetry run python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
   ```
 - `CONDITIONER_GEMINI_API_KEY` — API key for the Gemini API, used to generate weekly workout plans.
-- `CONDITIONER_WORKOUT_GENERATION_ENGINE` — which `WorkoutGenerationProvider` adapter is active: `gemini` (default) or `cloudflare`.
-- `CONDITIONER_CLOUDFLARE_ACCOUNT_ID` / `CONDITIONER_CLOUDFLARE_API_TOKEN` — only required when the engine above is `cloudflare`. The token needs Workers AI permission; the account id is in the Cloudflare dashboard sidebar or via `wrangler whoami`.
 
 ## Database
 
