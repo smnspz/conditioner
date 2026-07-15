@@ -47,7 +47,7 @@ class CloudflareAIWorkoutGenerationProvider(WorkoutGenerationProvider):
         """Prompt the model for a weekly plan and map the structured response to a Workout."""
 
         # Get the model's structured response for this week's constraints and readiness
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=150.0) as client:
             response = await client.post(
                 self._url,
                 headers=self._headers,
