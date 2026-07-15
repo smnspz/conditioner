@@ -37,6 +37,59 @@ poetry run yoyo list      # show migration status
 poetry run uvicorn conditioner.api.main:app --host 0.0.0.0 --port 9876 --reload
 ```
 
+## API
+
+All endpoints except `/health`, `/`, `/auth/google/*`, and `GET /equipment` require authentication: the access token issued at `/auth/google/callback` is delivered as an **HttpOnly cookie** (`access_token`), not an `Authorization` header — the browser sends it automatically on every subsequent request to the API.
+
+### Auth
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/auth/google/login` | Redirects to Google's OAuth consent screen. |
+| GET | `/auth/google/callback` | OAuth callback (`code`, `state` query params). Creates/looks up the user, stores encrypted Google credentials, sets the `access_token` cookie. |
+
+### Equipment
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/equipment` | Lists the seeded equipment catalog (`id`, `name`). No auth — same for every user. |
+
+### Constraints
+
+| Method | Path | Description |
+|---|---|---|
+| PUT | `/constraints` | Create/update the caller's `WorkoutConstraints` (`equipment` ids, `goal`, `available_minutes_by_weekday`). 422 if any equipment id isn't in the catalog. |
+| GET | `/constraints` | Fetch the caller's constraints. 404 if none set. |
+
+### Questionnaire
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/questionnaire` | Submit/update the daily subjective questionnaire (`fatigue`, `soreness`, `stress`, `sleep_quality` 0–10, `is_sick`; `date` defaults to today). Returns 201. |
+| GET | `/questionnaire/{day}` | Fetch the caller's questionnaire response for a date. 404 if none. |
+
+### Readiness
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/readiness/{day}` | Fetch the caller's readiness score/zone for a date, computing and caching it from wearable metrics + questionnaire if not already cached. 404 if there isn't enough data (missing metrics or questionnaire) for that date. |
+
+### Workouts
+
+| Method | Path | Description |
+|---|---|---|
+| POST | `/workouts/{week_start}/generate` | Generate and persist a weekly plan via the AI provider, using constraints + the readiness score dated exactly `week_start`. 422 if either is missing. |
+| POST | `/workouts/{week_start}/regenerate` | Regenerate the week (e.g. after constraints changed), keeping sessions already marked completed. Same 422 conditions as `generate`. |
+| POST | `/workouts/{day}/adjust` | Scale not-yet-completed sessions from `day` onward by that day's readiness zone (local rule-based, no AI call). 422 if there's no readiness score or no workout for that week. |
+| GET | `/workouts/{week_start}` | Fetch the caller's plan for the week starting `week_start`. 404 if none. |
+
+### Misc
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/health` | Liveness check. |
+| GET | `/` | Redirects to `/health`. |
+
 ## Testing
 
 ```bash
