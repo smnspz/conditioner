@@ -8,7 +8,7 @@
       "binding": "DB",
       "database_name": "conditioner",
       "database_id": "REPLACE_WITH_D1_DATABASE_ID",
-      "migrations_dir": "migrations_d1"
+      "migrations_dir": "migrations/d1"
     }
   ]
 }
