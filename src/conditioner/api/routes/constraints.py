@@ -8,7 +8,6 @@ from conditioner.api.dependencies import (
     get_equipment_repository,
 )
 from conditioner.api.dto.constraints import WorkoutConstraintsOut, WorkoutConstraintsRequest
-from conditioner.core.domain.workout.constraints import WorkoutConstraints
 from conditioner.core.interfaces.workout.constraints_repository import ConstraintsRepository
 from conditioner.core.interfaces.workout.equipment_repository import EquipmentRepository
 
@@ -34,21 +33,11 @@ async def upsert(
         )
 
     # Save constraints to persistence
-    await repo.save(
-        WorkoutConstraints(
-            user_id=user_id,
-            equipment=body.equipment,
-            goal=body.goal,
-            available_minutes_by_weekday=body.available_minutes_by_weekday,
-        )
-    )
+    constraints = body.to_domain(user_id)
+    await repo.save(constraints)
 
     # Return the saved constraints
-    return WorkoutConstraintsOut(
-        equipment=body.equipment,
-        goal=body.goal,
-        available_minutes_by_weekday=body.available_minutes_by_weekday,
-    )
+    return WorkoutConstraintsOut.from_domain(constraints)
 
 
 @router.get("", response_model=WorkoutConstraintsOut)
@@ -66,8 +55,4 @@ async def get(
         )
 
     # Return serialized constraints
-    return WorkoutConstraintsOut(
-        equipment=constraints.equipment,
-        goal=constraints.goal,
-        available_minutes_by_weekday=constraints.available_minutes_by_weekday,
-    )
+    return WorkoutConstraintsOut.from_domain(constraints)

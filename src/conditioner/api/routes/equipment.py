@@ -19,4 +19,4 @@ async def list_all(
     catalog = await repo.list_all()
 
     # Return serialized catalog entries
-    return [EquipmentOut(id=item.id, name=item.name) for item in catalog]
+    return [EquipmentOut.from_domain(item) for item in catalog]

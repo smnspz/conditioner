@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 from typing import Annotated
 
 from pydantic import BaseModel, Field
 
-from conditioner.core.domain.workout.constraints import TrainingGoal
+from conditioner.core.domain.workout.constraints import TrainingGoal, WorkoutConstraints
 
 
 class WorkoutConstraintsRequest(BaseModel):
@@ -19,6 +21,16 @@ class WorkoutConstraintsRequest(BaseModel):
     goal: TrainingGoal
     available_minutes_by_weekday: dict[Annotated[int, Field(ge=0, le=6)], int] = {}
 
+    def to_domain(self, user_id: str) -> WorkoutConstraints:
+        """Build a domain WorkoutConstraints for the given user."""
+
+        return WorkoutConstraints(
+            user_id=user_id,
+            equipment=self.equipment,
+            goal=self.goal,
+            available_minutes_by_weekday=self.available_minutes_by_weekday,
+        )
+
 
 class WorkoutConstraintsOut(BaseModel):
     """Serialized workout constraints returned to the client."""
@@ -26,3 +38,13 @@ class WorkoutConstraintsOut(BaseModel):
     equipment: list[str]
     goal: TrainingGoal
     available_minutes_by_weekday: dict[int, int]
+
+    @classmethod
+    def from_domain(cls, constraints: WorkoutConstraints) -> WorkoutConstraintsOut:
+        """Build from a domain WorkoutConstraints."""
+
+        return cls(
+            equipment=constraints.equipment,
+            goal=constraints.goal,
+            available_minutes_by_weekday=constraints.available_minutes_by_weekday,
+        )

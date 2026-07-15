@@ -42,7 +42,7 @@ async def get_by_date(
     # Get cached readiness score for this day, if already computed
     cached = await readiness_repository.get_by_date(user_id, day)
     if cached is not None:
-        return ReadinessScoreOut(date=cached.date, score=cached.score, zone=cached.zone.value)
+        return ReadinessScoreOut.from_domain(cached)
 
     # Get today's wearable metrics and questionnaire response
     metrics = await metrics_repository.get_by_date(user_id, day)
@@ -72,4 +72,4 @@ async def get_by_date(
     await readiness_repository.save(score)
 
     # Return computed readiness score
-    return ReadinessScoreOut(date=score.date, score=score.score, zone=score.zone.value)
+    return ReadinessScoreOut.from_domain(score)

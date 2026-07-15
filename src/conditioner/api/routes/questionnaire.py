@@ -5,7 +5,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from conditioner.api.dependencies import get_current_user_id, get_questionnaire_repository
 from conditioner.api.dto.questionnaire import QuestionnaireRequest, QuestionnaireResponseOut
-from conditioner.core.domain.questionnaire.questionnaire import QuestionnaireResponse
 from conditioner.core.interfaces.questionnaire.questionnaire_repository import (
     QuestionnaireRepository,
 )
@@ -22,27 +21,11 @@ async def submit(
     """Submit or update the daily questionnaire for the authenticated user."""
 
     # Save questionnaire response to persistence
-    await repo.save(
-        QuestionnaireResponse(
-            user_id=user_id,
-            date=body.date,
-            fatigue=body.fatigue,
-            soreness=body.soreness,
-            stress=body.stress,
-            sleep_quality=body.sleep_quality,
-            is_sick=body.is_sick,
-        )
-    )
+    response = body.to_domain(user_id)
+    await repo.save(response)
 
     # Return the saved response
-    return QuestionnaireResponseOut(
-        date=body.date,
-        fatigue=body.fatigue,
-        soreness=body.soreness,
-        stress=body.stress,
-        sleep_quality=body.sleep_quality,
-        is_sick=body.is_sick,
-    )
+    return QuestionnaireResponseOut.from_domain(response)
 
 
 @router.get("/{day}", response_model=QuestionnaireResponseOut)
@@ -61,11 +44,4 @@ async def get_by_date(
         )
 
     # Return serialized questionnaire response
-    return QuestionnaireResponseOut(
-        date=response.date,
-        fatigue=response.fatigue,
-        soreness=response.soreness,
-        stress=response.stress,
-        sleep_quality=response.sleep_quality,
-        is_sick=response.is_sick,
-    )
+    return QuestionnaireResponseOut.from_domain(response)
