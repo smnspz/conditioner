@@ -98,3 +98,15 @@
 - [ ] Unit tests per service/use case as built.
 - [ ] Integration tests for adapters (SQLite, Google Health client mocked).
 - [ ] E2E tests for full auth → ingest → readiness → workout flow.
+
+### 12. Progressive overload across weeks
+
+Feed prior workout history into each generation so the AI can increase load, volume, and complexity week over week. See CLAUDE.md → "Progressive overload" for the full design.
+
+- [ ] Add `prior_workouts: list[Workout] = []` to `WorkoutGenerationProvider.generate_weekly_plan()` interface.
+- [ ] Update `GeminiWorkoutGenerationProvider` and `CloudflareWorkoutGenerationProvider` to pass `prior_workouts` to `build_prompt`.
+- [ ] Add a "Recent workout history" section to `build_prompt` in `workout_prompt.py`, summarising the last N sessions compactly (date, exercises, sets/reps/load). Include when `prior_workouts` is non-empty; omit entirely otherwise.
+- [ ] Prompt instruction: "Build on the previous weeks — increase load, reps, or volume where the user has adapted, but respect the current readiness zone."
+- [ ] `generate_weekly_plan` service: fetch last 4 weeks of workouts from the `WorkoutRepository` and pass them in.
+- [ ] `regenerate_week` service: same.
+- [ ] Tests: unit test for the prompt history section; integration test through the generation service.

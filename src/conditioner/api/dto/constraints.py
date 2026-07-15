@@ -18,12 +18,15 @@ class WorkoutConstraintsRequest(BaseModel):
         initial_perceived_fitness: Self-reported fitness level on a 1–10 scale.
             Used as the readiness proxy for the first workout generation, before any
             computed readiness scores exist. Optional; can be updated later.
+        include_warmup_cooldown: Whether each generated session should include a
+            warm-up block before and a cool-down block after the main exercises.
     """
 
     equipment: list[str]
     goal: TrainingGoal
     available_minutes_by_weekday: dict[Annotated[int, Field(ge=0, le=6)], int] = {}
     initial_perceived_fitness: Annotated[int, Field(ge=1, le=10)] | None = None
+    include_warmup_cooldown: bool = False
 
     def to_domain(self, user_id: str) -> WorkoutConstraints:
         """Build a domain WorkoutConstraints for the given user."""
@@ -34,6 +37,7 @@ class WorkoutConstraintsRequest(BaseModel):
             goal=self.goal,
             available_minutes_by_weekday=self.available_minutes_by_weekday,
             initial_perceived_fitness=self.initial_perceived_fitness,
+            include_warmup_cooldown=self.include_warmup_cooldown,
         )
 
 
@@ -44,6 +48,7 @@ class WorkoutConstraintsOut(BaseModel):
     goal: TrainingGoal
     available_minutes_by_weekday: dict[int, int]
     initial_perceived_fitness: int | None
+    include_warmup_cooldown: bool
 
     @classmethod
     def from_domain(cls, constraints: WorkoutConstraints) -> WorkoutConstraintsOut:
@@ -54,4 +59,5 @@ class WorkoutConstraintsOut(BaseModel):
             goal=constraints.goal,
             available_minutes_by_weekday=constraints.available_minutes_by_weekday,
             initial_perceived_fitness=constraints.initial_perceived_fitness,
+            include_warmup_cooldown=constraints.include_warmup_cooldown,
         )

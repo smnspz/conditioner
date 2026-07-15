@@ -47,25 +47,31 @@ class SqliteWorkoutRepository(WorkoutRepository):
                     "INSERT INTO sessions (id, workout_id, date, completed) VALUES (?, ?, ?, ?)",
                     (session.id, workout.id, session.date.isoformat(), int(session.completed)),
                 )
-                for exercise in session.exercises:
-                    await conn.execute(
-                        """
-                        INSERT INTO exercises
-                            (id, session_id, name, modality, sets, reps,
-                             duration_minutes, target_load)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                        """,
-                        (
-                            exercise.id,
-                            session.id,
-                            exercise.name,
-                            exercise.modality.value,
-                            exercise.sets,
-                            exercise.reps,
-                            exercise.duration_minutes,
-                            exercise.target_load,
-                        ),
-                    )
+                for phase, exercises in (
+                    ("warmup", session.warmup_exercises),
+                    ("main", session.exercises),
+                    ("cooldown", session.cooldown_exercises),
+                ):
+                    for exercise in exercises:
+                        await conn.execute(
+                            """
+                            INSERT INTO exercises
+                                (id, session_id, name, modality, sets, reps,
+                                 duration_minutes, target_load, phase)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            """,
+                            (
+                                exercise.id,
+                                session.id,
+                                exercise.name,
+                                exercise.modality.value,
+                                exercise.sets,
+                                exercise.reps,
+                                exercise.duration_minutes,
+                                exercise.target_load,
+                                phase,
+                            ),
+                        )
             await conn.commit()
 
     async def get_by_id(self, workout_id: str) -> Workout | None:
@@ -124,9 +130,12 @@ class SqliteWorkoutRepository(WorkoutRepository):
             # Get all exercise rows
             exercise_rows = await exercise_cursor.fetchall()
 
-            # Build Exercise objects from rows
-            exercises = [
-                Exercise(
+            # Group exercises by phase, defaulting legacy rows to main
+            warmup: list[Exercise] = []
+            main: list[Exercise] = []
+            cooldown: list[Exercise] = []
+            for exercise_row in exercise_rows:
+                exercise = Exercise(
                     id=exercise_row["id"],
                     name=exercise_row["name"],
                     modality=ExerciseModality(exercise_row["modality"]),
@@ -135,13 +144,21 @@ class SqliteWorkoutRepository(WorkoutRepository):
                     duration_minutes=exercise_row["duration_minutes"],
                     target_load=exercise_row["target_load"],
                 )
-                for exercise_row in exercise_rows
-            ]
+                phase = exercise_row["phase"] if exercise_row["phase"] else "main"
+                if phase == "warmup":
+                    warmup.append(exercise)
+                elif phase == "cooldown":
+                    cooldown.append(exercise)
+                else:
+                    main.append(exercise)
+
             sessions.append(
                 Session(
                     id=session_row["id"],
                     date=date.fromisoformat(session_row["date"]),
-                    exercises=exercises,
+                    warmup_exercises=warmup,
+                    exercises=main,
+                    cooldown_exercises=cooldown,
                     completed=bool(session_row["completed"]),
                 )
             )

@@ -24,6 +24,8 @@ class WorkoutConstraints:
         initial_perceived_fitness: Self-reported fitness level on a 1–10 scale, set
             once during onboarding. Used as the readiness proxy for the first workout
             generation, before any computed readiness scores exist.
+        include_warmup_cooldown: Whether each generated session should include a
+            structured warm-up block before and a cool-down block after main exercises.
     """
 
     user_id: str
@@ -31,3 +33,4 @@ class WorkoutConstraints:
     goal: TrainingGoal
     available_minutes_by_weekday: dict[int, int] = field(default_factory=dict[int, int])
     initial_perceived_fitness: int | None = None
+    include_warmup_cooldown: bool = False

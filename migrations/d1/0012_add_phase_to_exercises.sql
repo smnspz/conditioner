@@ -1,0 +1,1 @@
+ALTER TABLE exercises ADD COLUMN phase TEXT NOT NULL DEFAULT 'main';

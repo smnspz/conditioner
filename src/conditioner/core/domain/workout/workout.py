@@ -43,13 +43,17 @@ class Session:
     Attributes:
         id: Unique identifier.
         date: The calendar day this session is scheduled for.
-        exercises: The exercises prescribed for this session.
+        exercises: The main exercises prescribed for this session.
+        warmup_exercises: Optional warm-up exercises preceding the main block.
+        cooldown_exercises: Optional cool-down exercises following the main block.
         completed: Whether the user has completed this session.
     """
 
     id: str
     date: date
     exercises: list[Exercise] = field(default_factory=list[Exercise])
+    warmup_exercises: list[Exercise] = field(default_factory=list[Exercise])
+    cooldown_exercises: list[Exercise] = field(default_factory=list[Exercise])
     completed: bool = False
 
 

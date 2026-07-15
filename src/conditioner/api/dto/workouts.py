@@ -38,7 +38,9 @@ class SessionOut(BaseModel):
 
     id: str
     date: Date
+    warmup_exercises: list[ExerciseOut]
     exercises: list[ExerciseOut]
+    cooldown_exercises: list[ExerciseOut]
     completed: bool
 
     @classmethod
@@ -49,7 +51,9 @@ class SessionOut(BaseModel):
             id=session.id,
             date=session.date,
             completed=session.completed,
+            warmup_exercises=[ExerciseOut.from_domain(ex) for ex in session.warmup_exercises],
             exercises=[ExerciseOut.from_domain(exercise) for exercise in session.exercises],
+            cooldown_exercises=[ExerciseOut.from_domain(ex) for ex in session.cooldown_exercises],
         )
 
 

@@ -87,6 +87,14 @@ Set and updated by the user via API, persisted in SQLite (one row per user, vers
 3. Daily readiness (see below) is persisted and used both to adjust remaining sessions during the week and as an input the next time a plan is (re)generated.
 4. If constraints change mid-week (e.g. available time for a day), the core regenerates the affected session(s) via the same AI port, keeping prior completed sessions untouched.
 
+### Progressive overload (deferred — see TASKS.md)
+
+The system does not yet model week-over-week progression. When implemented:
+- The `generate_weekly_plan` service must fetch the user's recent workout history (e.g. last 4 weeks) from the repository and pass it to the AI port alongside the current constraints and readiness.
+- The workout generation provider interface must accept an optional `prior_workouts: list[Workout]` parameter.
+- The prompt must include a concise summary of what was trained in recent weeks and instruct the AI to build on it (increase load, volume, or complexity as fitness level and readiness allow).
+- The progression logic must live in the service layer and prompt, not hardcoded in any adapter.
+
 ## Readiness Score model (0–100)
 
 A daily training-readiness score aggregates objective tracker data and subjective questionnaire data into a single 0–100 value.

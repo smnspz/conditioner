@@ -21,13 +21,14 @@ class D1ConstraintsRepository(ConstraintsRepository):
             """
             INSERT INTO workout_constraints
                 (user_id, equipment, goal, available_minutes_by_weekday,
-                 initial_perceived_fitness)
-            VALUES (?, ?, ?, ?, ?)
+                 initial_perceived_fitness, include_warmup_cooldown)
+            VALUES (?, ?, ?, ?, ?, ?)
             ON CONFLICT (user_id) DO UPDATE SET
                 equipment = excluded.equipment,
                 goal = excluded.goal,
                 available_minutes_by_weekday = excluded.available_minutes_by_weekday,
-                initial_perceived_fitness = excluded.initial_perceived_fitness
+                initial_perceived_fitness = excluded.initial_perceived_fitness,
+                include_warmup_cooldown = excluded.include_warmup_cooldown
             """,
             (
                 constraints.user_id,
@@ -35,6 +36,7 @@ class D1ConstraintsRepository(ConstraintsRepository):
                 constraints.goal.value,
                 json.dumps(constraints.available_minutes_by_weekday),
                 constraints.initial_perceived_fitness,
+                int(constraints.include_warmup_cooldown),
             ),
         )
 
@@ -59,4 +61,5 @@ class D1ConstraintsRepository(ConstraintsRepository):
                 int(k): v for k, v in json.loads(row["available_minutes_by_weekday"]).items()
             },
             initial_perceived_fitness=row.get("initial_perceived_fitness"),
+            include_warmup_cooldown=bool(row.get("include_warmup_cooldown", 0)),
         )
