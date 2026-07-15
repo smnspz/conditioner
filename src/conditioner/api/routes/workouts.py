@@ -10,8 +10,7 @@ from conditioner.api.dependencies import (
     get_workout_generation_provider,
     get_workout_repository,
 )
-from conditioner.api.dto.workouts import ExerciseOut, SessionOut, WorkoutOut
-from conditioner.core.domain.workout.workout import Workout
+from conditioner.api.dto.workouts import WorkoutOut
 from conditioner.core.interfaces.readiness.readiness_repository import ReadinessRepository
 from conditioner.core.interfaces.workout.constraints_repository import ConstraintsRepository
 from conditioner.core.interfaces.workout.workout_generation_provider import (
@@ -26,33 +25,6 @@ from conditioner.core.services.workout.generate_weekly_plan import (
 from conditioner.core.services.workout.regenerate_week import regenerate_week
 
 router = APIRouter(prefix="/workouts", tags=["workouts"])
-
-
-def _to_out(workout: Workout) -> WorkoutOut:
-    return WorkoutOut(
-        id=workout.id,
-        week_start=workout.week_start,
-        sessions=[
-            SessionOut(
-                id=session.id,
-                date=session.date,
-                completed=session.completed,
-                exercises=[
-                    ExerciseOut(
-                        id=exercise.id,
-                        name=exercise.name,
-                        modality=exercise.modality.value,
-                        sets=exercise.sets,
-                        reps=exercise.reps,
-                        duration_minutes=exercise.duration_minutes,
-                        target_load=exercise.target_load,
-                    )
-                    for exercise in session.exercises
-                ],
-            )
-            for session in workout.sessions
-        ],
-    )
 
 
 @router.post("/{week_start}/generate", response_model=WorkoutOut)
@@ -85,7 +57,7 @@ async def generate(
         ) from exc
 
     # Return the generated workout plan
-    return _to_out(workout)
+    return WorkoutOut.from_domain(workout)
 
 
 @router.post("/{week_start}/regenerate", response_model=WorkoutOut)
@@ -118,7 +90,7 @@ async def regenerate(
         ) from exc
 
     # Return the regenerated workout plan
-    return _to_out(workout)
+    return WorkoutOut.from_domain(workout)
 
 
 @router.post("/{day}/adjust", response_model=WorkoutOut)
@@ -140,7 +112,7 @@ async def adjust(
         ) from exc
 
     # Return the adjusted workout plan
-    return _to_out(workout)
+    return WorkoutOut.from_domain(workout)
 
 
 @router.get("/{week_start}", response_model=WorkoutOut)
@@ -157,4 +129,4 @@ async def get_by_week(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workout not found")
 
     # Return the stored workout plan
-    return _to_out(workout)
+    return WorkoutOut.from_domain(workout)
