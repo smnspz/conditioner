@@ -10,6 +10,7 @@ from conditioner.core.adapters.ai.workout_prompt import (
     build_weekly_plan_schema,
     sessions_from_plan,
 )
+from conditioner.core.domain.fitness.fitness_level import FitnessLevel
 from conditioner.core.domain.readiness.readiness import ReadinessScore
 from conditioner.core.domain.workout.constraints import WorkoutConstraints
 from conditioner.core.domain.workout.workout import Workout
@@ -39,6 +40,7 @@ class CloudflareAIWorkoutGenerationProvider(WorkoutGenerationProvider):
         user_id: str,
         week_start: date,
         constraints: WorkoutConstraints,
+        fitness_level: FitnessLevel,
         readiness: ReadinessScore | None,
     ) -> Workout:
         """Prompt the model for a weekly plan and map the structured response to a Workout."""
@@ -46,7 +48,7 @@ class CloudflareAIWorkoutGenerationProvider(WorkoutGenerationProvider):
         # Get the per-request schema, constraining exercise equipment to what's available
         schema_cls = build_weekly_plan_schema(constraints)
 
-        # Get the model's structured response for this week's constraints and readiness
+        # Get the model's structured response for this week's constraints and fitness state
         async with httpx.AsyncClient(timeout=150.0) as client:
             response = await client.post(
                 self._url,
@@ -55,7 +57,9 @@ class CloudflareAIWorkoutGenerationProvider(WorkoutGenerationProvider):
                     "messages": [
                         {
                             "role": "user",
-                            "content": build_prompt(week_start, constraints, readiness),
+                            "content": build_prompt(
+                                week_start, constraints, fitness_level, readiness
+                            ),
                         }
                     ],
                     "response_format": {

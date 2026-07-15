@@ -5,9 +5,12 @@ from unittest.mock import AsyncMock
 from conditioner.core.adapters.ai.gemini.workout_generation_provider import (
     GeminiWorkoutGenerationProvider,
 )
+from conditioner.core.domain.fitness.fitness_level import FitnessLevel
 from conditioner.core.domain.readiness.readiness import ReadinessScore, ReadinessZone
 from conditioner.core.domain.workout.constraints import TrainingGoal, WorkoutConstraints
 from conditioner.core.domain.workout.workout import ExerciseModality
+
+_FITNESS_LEVEL = FitnessLevel(user_id="user-1", week_start=date(2026, 7, 13), score=6)
 
 
 def _fake_interaction(output_text: str) -> AsyncMock:
@@ -50,6 +53,7 @@ async def test_generate_weekly_plan_maps_structured_response_to_workout() -> Non
             goal=TrainingGoal.MMA_CONDITIONING,
             available_minutes_by_weekday={0: 60},
         ),
+        fitness_level=_FITNESS_LEVEL,
         readiness=ReadinessScore(
             user_id="user-1", date=date(2026, 7, 13), score=75, zone=ReadinessZone.GOOD
         ),
@@ -82,6 +86,7 @@ async def test_generate_weekly_plan_calls_gemini_with_structured_output_schema()
             goal=TrainingGoal.MMA_CONDITIONING,
             available_minutes_by_weekday={},
         ),
+        fitness_level=_FITNESS_LEVEL,
         readiness=ReadinessScore(
             user_id="user-1", date=date(2026, 7, 13), score=50, zone=ReadinessZone.MODERATE
         ),

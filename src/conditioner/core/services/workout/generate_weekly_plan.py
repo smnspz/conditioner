@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from datetime import date
 
+from conditioner.core.domain.fitness.fitness_level import FitnessLevel
 from conditioner.core.domain.workout.workout import Workout
+from conditioner.core.interfaces.fitness.fitness_level_repository import FitnessLevelRepository
 from conditioner.core.interfaces.readiness.readiness_repository import ReadinessRepository
 from conditioner.core.interfaces.workout.constraints_repository import ConstraintsRepository
 from conditioner.core.interfaces.workout.workout_generation_provider import (
@@ -12,23 +14,24 @@ from conditioner.core.interfaces.workout.workout_repository import WorkoutReposi
 
 
 class PrerequisitesMissingError(Exception):
-    """Raised when a user has no constraints or no readiness score to generate from."""
+    """Raised when a user is missing constraints, fitness level, or readiness to generate from."""
 
 
 async def generate_weekly_plan(
     user_id: str,
     week_start: date,
     constraints_repository: ConstraintsRepository,
+    fitness_level_repository: FitnessLevelRepository,
     readiness_repository: ReadinessRepository,
     generation_provider: WorkoutGenerationProvider,
     workout_repository: WorkoutRepository,
 ) -> Workout:
     """Generate and persist a user's weekly workout plan.
 
-    For the first-ever generation (no readiness score yet), falls back to
-    constraints.initial_perceived_fitness to inform starting difficulty and session
-    structure. Refuses to generate if constraints are missing or if neither a
-    readiness score nor an initial perceived fitness is available.
+    Requires constraints and a fitness level (weekly survey). The fitness level falls back to
+    constraints.initial_perceived_fitness for the first week before the user has submitted a
+    survey. Readiness is optional — it may be absent for a user's very first generation before
+    any wearable or questionnaire data exists.
     """
 
     # Get the user's constraints
@@ -36,17 +39,27 @@ async def generate_weekly_plan(
     if constraints is None:
         raise PrerequisitesMissingError("Workout constraints are not set")
 
-    # Get the user's readiness score for the week's start date
-    readiness = await readiness_repository.get_by_date(user_id, week_start)
+    # Get the user's weekly fitness level, falling back to the initial perceived fitness seed
+    fitness_level = await fitness_level_repository.get_by_week(user_id, week_start)
+    if fitness_level is None:
+        if constraints.initial_perceived_fitness is None:
+            raise PrerequisitesMissingError(
+                "No fitness level set for this week and no initial perceived fitness configured"
+            )
 
-    if readiness is None and constraints.initial_perceived_fitness is None:
-        raise PrerequisitesMissingError(
-            "No readiness score available and no initial perceived fitness set"
+        # Seed fitness level from the onboarding value until the user submits a survey
+        fitness_level = FitnessLevel(
+            user_id=user_id,
+            week_start=week_start,
+            score=constraints.initial_perceived_fitness,
         )
+
+    # Get the user's readiness score for the week's start date (may be absent for first week)
+    readiness = await readiness_repository.get_by_date(user_id, week_start)
 
     # Get the generated plan from the AI provider
     workout = await generation_provider.generate_weekly_plan(
-        user_id, week_start, constraints, readiness
+        user_id, week_start, constraints, fitness_level, readiness
     )
     await workout_repository.save(workout)
 

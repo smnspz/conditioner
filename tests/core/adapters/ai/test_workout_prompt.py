@@ -1,8 +1,19 @@
 from datetime import date
 
 from conditioner.core.adapters.ai.workout_prompt import build_prompt, build_weekly_plan_schema
+from conditioner.core.domain.fitness.fitness_level import FitnessLevel
 from conditioner.core.domain.readiness.readiness import ReadinessScore, ReadinessZone
 from conditioner.core.domain.workout.constraints import TrainingGoal, WorkoutConstraints
+
+_WEEK_START = date(2026, 7, 14)
+_BASE_CONSTRAINTS = WorkoutConstraints(
+    user_id="user-1",
+    equipment=["dumbbells"],
+    goal=TrainingGoal.MMA_CONDITIONING,
+    available_minutes_by_weekday={0: 60, 1: 60, 2: 60, 3: 60, 4: 60},
+)
+_FITNESS_LEVEL = FitnessLevel(user_id="user-1", week_start=_WEEK_START, score=6)
+_READINESS = ReadinessScore(user_id="user-1", date=_WEEK_START, score=75, zone=ReadinessZone.GOOD)
 
 
 def _equipment_enum(schema: object, variant: str) -> set[str]:
@@ -47,69 +58,36 @@ def test_equipment_enum_defaults_to_bodyweight_only() -> None:
     assert _equipment_enum(schema, "StrengthExerciseSchema") == {"bodyweight"}
 
 
-_WEEK_START = date(2026, 7, 14)
-_BASE_CONSTRAINTS = WorkoutConstraints(
-    user_id="user-1",
-    equipment=["dumbbells"],
-    goal=TrainingGoal.MMA_CONDITIONING,
-    available_minutes_by_weekday={0: 60, 1: 60, 2: 60, 3: 60, 4: 60},
-)
+def test_build_prompt_includes_fitness_level_and_readiness() -> None:
+    prompt = build_prompt(_WEEK_START, _BASE_CONSTRAINTS, _FITNESS_LEVEL, _READINESS)
 
-
-def test_build_prompt_with_readiness_includes_score_and_zone() -> None:
-    readiness = ReadinessScore(
-        user_id="user-1", date=_WEEK_START, score=75, zone=ReadinessZone.GOOD
-    )
-
-    prompt = build_prompt(_WEEK_START, _BASE_CONSTRAINTS, readiness)
-
+    assert "6/10" in prompt
+    assert "intermediate" in prompt
     assert "75/100" in prompt
     assert "good" in prompt
-    assert "initial perceived fitness" not in prompt
 
 
-def test_build_prompt_without_readiness_uses_initial_fitness_guidance() -> None:
-    constraints = WorkoutConstraints(
-        user_id="user-1",
-        equipment=["dumbbells"],
-        goal=TrainingGoal.MMA_CONDITIONING,
-        available_minutes_by_weekday={0: 60, 1: 60, 2: 60, 3: 60, 4: 60},
-        initial_perceived_fitness=2,
-    )
+def test_build_prompt_with_none_readiness_notes_first_week() -> None:
+    prompt = build_prompt(_WEEK_START, _BASE_CONSTRAINTS, _FITNESS_LEVEL, readiness=None)
 
-    prompt = build_prompt(_WEEK_START, constraints, readiness=None)
-
-    assert "2/10" in prompt
-    assert "low" in prompt
-    assert "rest day" in prompt
+    assert "6/10" in prompt
+    assert "No readiness data yet" in prompt or "no data" in prompt.lower()
     assert "75/100" not in prompt
 
 
-def test_build_prompt_low_fitness_mentions_midweek_rest_and_no_weekend() -> None:
-    constraints = WorkoutConstraints(
-        user_id="user-1",
-        equipment=[],
-        goal=TrainingGoal.MMA_CONDITIONING,
-        available_minutes_by_weekday={},
-        initial_perceived_fitness=1,
-    )
+def test_build_prompt_beginner_fitness_uses_beginner_tier() -> None:
+    fitness = FitnessLevel(user_id="user-1", week_start=_WEEK_START, score=2)
 
-    prompt = build_prompt(_WEEK_START, constraints, readiness=None)
+    prompt = build_prompt(_WEEK_START, _BASE_CONSTRAINTS, fitness, _READINESS)
 
-    assert "Wednesday" in prompt
-    assert "Saturday" in prompt or "Sunday" in prompt or "weekend" in prompt.lower()
+    assert "2/10" in prompt
+    assert "beginner" in prompt
 
 
-def test_build_prompt_high_fitness_mentions_full_schedule() -> None:
-    constraints = WorkoutConstraints(
-        user_id="user-1",
-        equipment=[],
-        goal=TrainingGoal.MMA_CONDITIONING,
-        available_minutes_by_weekday={},
-        initial_perceived_fitness=9,
-    )
+def test_build_prompt_advanced_fitness_uses_advanced_tier() -> None:
+    fitness = FitnessLevel(user_id="user-1", week_start=_WEEK_START, score=9)
 
-    prompt = build_prompt(_WEEK_START, constraints, readiness=None)
+    prompt = build_prompt(_WEEK_START, _BASE_CONSTRAINTS, fitness, _READINESS)
 
     assert "9/10" in prompt
-    assert "high" in prompt
+    assert "advanced" in prompt

@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field, create_model
 
+from conditioner.core.domain.fitness.fitness_level import FitnessLevel
 from conditioner.core.domain.readiness.readiness import ReadinessScore, ReadinessZone
 from conditioner.core.domain.workout.constraints import WorkoutConstraints
 from conditioner.core.domain.workout.workout import Exercise, ExerciseModality, Session
@@ -32,34 +33,37 @@ _ZONE_GUIDANCE: dict[ReadinessZone, str] = {
 }
 
 
-def _initial_fitness_guidance(fitness: int) -> str:
-    """Return structural and intensity guidance for the first week based on fitness level.
+def _fitness_level_line(fitness_level: FitnessLevel) -> str:
+    """Return the fitness-level line for the prompt.
 
-    Low (1–3): rest day mid-week + weekend off, minimal intensity.
-    Moderate (4–7): one lighter mid-week session, moderate starting load.
-    High (8–10): full schedule utilisation, substantial starting intensity.
+    Fitness level drives exercise difficulty and complexity tier:
+    - 1–3 (beginner): simple foundational movements, low complexity, technique focus.
+    - 4–6 (intermediate): standard progression, moderate complexity and volume.
+    - 7–10 (advanced): complex movements, high volume and intensity potential.
     """
 
-    if fitness <= 3:
-        return (
-            f"This is the user's first week. Initial perceived fitness: {fitness}/10 (low). "
-            "Structure the week with a mandatory rest day on Wednesday (or the nearest "
-            "available mid-week day) and no sessions on Saturday or Sunday — even if those "
-            "days have available minutes. Keep intensity low, exercises simple and technique-"
-            "focused, sets and reps minimal."
+    score = fitness_level.score
+    if score <= 3:
+        tier = "beginner"
+        guidance = (
+            "Choose simple, foundational movements. Prioritise technique over load. "
+            "Keep volume low and avoid complex or high-skill exercises."
         )
-    if fitness <= 7:
-        return (
-            f"This is the user's first week. Initial perceived fitness: {fitness}/10 (moderate). "
-            "Include one lighter, recovery-focused session mid-week. Weekend sessions are "
-            "optional — only schedule them if the user has meaningful time available. Use "
-            "moderate starting intensity with manageable loads and a balanced exercise mix."
+    elif score <= 6:
+        tier = "intermediate"
+        guidance = (
+            "Use standard exercise progressions with moderate complexity and volume. "
+            "A balanced mix of compound and accessory movements is appropriate."
         )
-    return (
-        f"This is the user's first week. Initial perceived fitness: {fitness}/10 (high). "
-        "Utilise the full weekly schedule as available. Start with substantial intensity, "
-        "varied exercise selection, and challenging but achievable loads."
-    )
+    else:
+        tier = "advanced"
+        guidance = (
+            "Complex, high-skill movements are appropriate. Higher volume and intensity "
+            "potential — challenge the user with demanding exercise selection."
+        )
+
+    # Return the formatted fitness level line
+    return f"Fitness level: {score}/10 ({tier}). {guidance}"
 
 # Structured-output schema shared by all WorkoutGenerationProvider adapters; exercise
 # is a discriminated union on modality.
@@ -158,22 +162,27 @@ def build_weekly_plan_schema(constraints: WorkoutConstraints) -> type[WeeklyPlan
 def build_prompt(
     week_start: date,
     constraints: WorkoutConstraints,
+    fitness_level: FitnessLevel,
     readiness: ReadinessScore | None,
 ) -> str:
-    """Build the text prompt describing this week's constraints and fitness state.
+    """Build the text prompt describing this week's constraints, fitness level, and readiness.
 
-    When readiness is None (first-ever generation), uses constraints.initial_perceived_fitness
-    to produce structural guidance (rest day placement, starting difficulty). When readiness
-    is provided, uses the computed zone to guide volume and intensity.
+    fitness_level (weekly self-report, 1–10) sets the difficulty and complexity tier.
+    readiness (daily computed score, 0–100) adjusts volume and intensity within that tier.
+    readiness may be None for a user's first-ever generation before any wearable or
+    questionnaire data exists; the prompt notes this and defers entirely to fitness level.
     """
 
     equipment = ", ".join(constraints.equipment) or "none (bodyweight only)"
 
     if readiness is None:
-        fitness_note = _initial_fitness_guidance(constraints.initial_perceived_fitness or 5)
+        readiness_line = (
+            "Readiness: no data yet (first week). "
+            "Calibrate intensity conservatively — stay well within the user's capacity."
+        )
     else:
-        fitness_note = (
-            f"Current readiness: {readiness.score}/100 ({readiness.zone.value}). "
+        readiness_line = (
+            f"Readiness: {readiness.score}/100 ({readiness.zone.value}). "
             f"{_ZONE_GUIDANCE[readiness.zone]}"
         )
 
@@ -183,7 +192,8 @@ def build_prompt(
         f"Available equipment: {equipment}.\n"
         f"Available minutes per weekday (0=Monday..6=Sunday): "
         f"{constraints.available_minutes_by_weekday}.\n"
-        f"{fitness_note}\n"
+        f"{_fitness_level_line(fitness_level)}\n"
+        f"{readiness_line}\n"
         "Only schedule sessions on weekdays with available minutes, and keep each "
         "session within its day's time budget.\n"
         f"Only use the listed equipment ({equipment}) and bodyweight exercises — never "

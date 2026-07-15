@@ -7,6 +7,7 @@ import httpx
 from conditioner.core.adapters.ai.cloudflare.workout_generation_provider import (
     CloudflareAIWorkoutGenerationProvider,
 )
+from conditioner.core.domain.fitness.fitness_level import FitnessLevel
 from conditioner.core.domain.readiness.readiness import ReadinessScore, ReadinessZone
 from conditioner.core.domain.workout.constraints import TrainingGoal, WorkoutConstraints
 from conditioner.core.domain.workout.workout import ExerciseModality
@@ -17,6 +18,7 @@ _CONSTRAINTS = WorkoutConstraints(
     goal=TrainingGoal.MMA_CONDITIONING,
     available_minutes_by_weekday={0: 60},
 )
+_FITNESS_LEVEL = FitnessLevel(user_id="user-1", week_start=date(2026, 7, 13), score=6)
 _READINESS = ReadinessScore(
     user_id="user-1", date=date(2026, 7, 13), score=75, zone=ReadinessZone.GOOD
 )
@@ -63,6 +65,7 @@ async def _assert_maps_plan_to_workout(response: httpx.Response) -> None:
             user_id="user-1",
             week_start=date(2026, 7, 13),
             constraints=_CONSTRAINTS,
+            fitness_level=_FITNESS_LEVEL,
             readiness=_READINESS,
         )
 
@@ -95,6 +98,7 @@ async def test_generate_weekly_plan_calls_correct_url_with_structured_output_sch
             user_id="user-1",
             week_start=date(2026, 7, 13),
             constraints=_CONSTRAINTS,
+            fitness_level=_FITNESS_LEVEL,
             readiness=_READINESS,
         )
 

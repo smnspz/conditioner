@@ -10,6 +10,7 @@ from conditioner.api.dependencies import (
     get_access_token_service,
     get_constraints_repository,
     get_current_user_id,
+    get_fitness_level_repository,
     get_readiness_repository,
     get_workout_generation_provider,
     get_workout_repository,
@@ -18,12 +19,16 @@ from conditioner.api.main import app
 from conditioner.core.adapters.persistence.sqlite.constraints_repository import (
     SqliteConstraintsRepository,
 )
+from conditioner.core.adapters.persistence.sqlite.fitness_level_repository import (
+    SqliteFitnessLevelRepository,
+)
 from conditioner.core.adapters.persistence.sqlite.readiness_repository import (
     SqliteReadinessRepository,
 )
 from conditioner.core.adapters.persistence.sqlite.workout_repository import (
     SqliteWorkoutRepository,
 )
+from conditioner.core.domain.fitness.fitness_level import FitnessLevel
 from conditioner.core.domain.readiness.readiness import ReadinessScore, ReadinessZone
 from conditioner.core.domain.workout.constraints import TrainingGoal, WorkoutConstraints
 from conditioner.core.domain.workout.workout import Exercise, ExerciseModality, Session, Workout
@@ -47,6 +52,9 @@ def client(db_path: str) -> Iterator[TestClient]:
 
     token_service = AccessTokenService(_JWT_SIGNER)
     app.dependency_overrides[get_constraints_repository] = lambda: SqliteConstraintsRepository(
+        db_path
+    )
+    app.dependency_overrides[get_fitness_level_repository] = lambda: SqliteFitnessLevelRepository(
         db_path
     )
     app.dependency_overrides[get_readiness_repository] = lambda: SqliteReadinessRepository(
@@ -79,6 +87,9 @@ async def test_generate_succeeds_when_prerequisites_set(
             goal=TrainingGoal.MMA_CONDITIONING,
             available_minutes_by_weekday={0: 60},
         )
+    )
+    await SqliteFitnessLevelRepository(db_path).save(
+        FitnessLevel(user_id=_USER_ID, week_start=_WEEK_START, score=6)
     )
     await SqliteReadinessRepository(db_path).save(
         ReadinessScore(user_id=_USER_ID, date=_WEEK_START, score=75, zone=ReadinessZone.GOOD)
@@ -165,6 +176,9 @@ async def test_regenerate_succeeds_when_prerequisites_set(
             goal=TrainingGoal.MMA_CONDITIONING,
             available_minutes_by_weekday={0: 30},
         )
+    )
+    await SqliteFitnessLevelRepository(db_path).save(
+        FitnessLevel(user_id=_USER_ID, week_start=_WEEK_START, score=6)
     )
     await SqliteReadinessRepository(db_path).save(
         ReadinessScore(user_id=_USER_ID, date=_WEEK_START, score=75, zone=ReadinessZone.GOOD)

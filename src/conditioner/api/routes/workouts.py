@@ -6,11 +6,13 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from conditioner.api.dependencies import (
     get_constraints_repository,
     get_current_user_id,
+    get_fitness_level_repository,
     get_readiness_repository,
     get_workout_generation_provider,
     get_workout_repository,
 )
 from conditioner.api.dto.workouts import WorkoutOut
+from conditioner.core.interfaces.fitness.fitness_level_repository import FitnessLevelRepository
 from conditioner.core.interfaces.readiness.readiness_repository import ReadinessRepository
 from conditioner.core.interfaces.workout.constraints_repository import ConstraintsRepository
 from conditioner.core.interfaces.workout.workout_generation_provider import (
@@ -34,6 +36,9 @@ async def generate(
     constraints_repository: Annotated[
         ConstraintsRepository, Depends(get_constraints_repository)
     ],
+    fitness_level_repository: Annotated[
+        FitnessLevelRepository, Depends(get_fitness_level_repository)
+    ],
     readiness_repository: Annotated[ReadinessRepository, Depends(get_readiness_repository)],
     generation_provider: Annotated[
         WorkoutGenerationProvider, Depends(get_workout_generation_provider)
@@ -47,6 +52,7 @@ async def generate(
             user_id,
             week_start,
             constraints_repository,
+            fitness_level_repository,
             readiness_repository,
             generation_provider,
             workout_repository,
@@ -67,6 +73,9 @@ async def regenerate(
     constraints_repository: Annotated[
         ConstraintsRepository, Depends(get_constraints_repository)
     ],
+    fitness_level_repository: Annotated[
+        FitnessLevelRepository, Depends(get_fitness_level_repository)
+    ],
     readiness_repository: Annotated[ReadinessRepository, Depends(get_readiness_repository)],
     generation_provider: Annotated[
         WorkoutGenerationProvider, Depends(get_workout_generation_provider)
@@ -80,6 +89,7 @@ async def regenerate(
             user_id,
             week_start,
             constraints_repository,
+            fitness_level_repository,
             readiness_repository,
             generation_provider,
             workout_repository,

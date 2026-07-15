@@ -23,6 +23,9 @@ from conditioner.core.adapters.persistence.d1.metrics_repository import D1Metric
 from conditioner.core.adapters.persistence.d1.questionnaire_repository import (
     D1QuestionnaireRepository,
 )
+from conditioner.core.adapters.persistence.d1.fitness_level_repository import (
+    D1FitnessLevelRepository,
+)
 from conditioner.core.adapters.persistence.d1.readiness_repository import D1ReadinessRepository
 from conditioner.core.adapters.persistence.d1.user_repository import D1UserRepository
 from conditioner.core.adapters.persistence.d1.workout_repository import D1WorkoutRepository
@@ -41,6 +44,9 @@ from conditioner.core.adapters.persistence.sqlite.metrics_repository import (
 from conditioner.core.adapters.persistence.sqlite.questionnaire_repository import (
     SqliteQuestionnaireRepository,
 )
+from conditioner.core.adapters.persistence.sqlite.fitness_level_repository import (
+    SqliteFitnessLevelRepository,
+)
 from conditioner.core.adapters.persistence.sqlite.readiness_repository import (
     SqliteReadinessRepository,
 )
@@ -54,6 +60,7 @@ from conditioner.core.interfaces.auth.user_repository import UserRepository
 from conditioner.core.interfaces.questionnaire.questionnaire_repository import (
     QuestionnaireRepository,
 )
+from conditioner.core.interfaces.fitness.fitness_level_repository import FitnessLevelRepository
 from conditioner.core.interfaces.readiness.readiness_repository import ReadinessRepository
 from conditioner.core.interfaces.wearables.metrics_repository import MetricsRepository
 from conditioner.core.interfaces.workout.constraints_repository import ConstraintsRepository
@@ -168,6 +175,20 @@ def get_equipment_repository(
 
     # Return SQLite-backed equipment repository
     return SqliteEquipmentRepository(settings.database_path)
+
+
+def get_fitness_level_repository(
+    settings: Annotated[Settings, Depends(get_settings)],
+    d1_client: Annotated[D1Client | None, Depends(get_d1_client)] = None,
+) -> FitnessLevelRepository:
+    """Resolve the active fitness level repository, per persistence_engine."""
+
+    if settings.persistence_engine == PersistenceEngine.D1:
+        # Return D1-backed fitness level repository
+        return D1FitnessLevelRepository(d1_client)  # type: ignore[arg-type]
+
+    # Return SQLite-backed fitness level repository
+    return SqliteFitnessLevelRepository(settings.database_path)
 
 
 def get_workout_generation_provider(

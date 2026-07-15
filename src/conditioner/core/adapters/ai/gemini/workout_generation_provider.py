@@ -12,6 +12,7 @@ from conditioner.core.adapters.ai.workout_prompt import (
     build_weekly_plan_schema,
     sessions_from_plan,
 )
+from conditioner.core.domain.fitness.fitness_level import FitnessLevel
 from conditioner.core.domain.readiness.readiness import ReadinessScore
 from conditioner.core.domain.workout.constraints import WorkoutConstraints
 from conditioner.core.domain.workout.workout import Workout
@@ -37,6 +38,7 @@ class GeminiWorkoutGenerationProvider(WorkoutGenerationProvider):
         user_id: str,
         week_start: date,
         constraints: WorkoutConstraints,
+        fitness_level: FitnessLevel,
         readiness: ReadinessScore | None,
     ) -> Workout:
         """Prompt Gemini for a weekly plan and map the structured response to a Workout."""
@@ -44,10 +46,10 @@ class GeminiWorkoutGenerationProvider(WorkoutGenerationProvider):
         # Get the per-request schema, constraining exercise equipment to what's available
         schema_cls = build_weekly_plan_schema(constraints)
 
-        # Get the model's structured response for this week's constraints and readiness
+        # Get the model's structured response for this week's constraints and fitness state
         interaction = await self._client.aio.interactions.create(
             model=Constants.gemini_workout_model(),
-            input=build_prompt(week_start, constraints, readiness),
+            input=build_prompt(week_start, constraints, fitness_level, readiness),
             response_format={
                 "type": "text",
                 "mime_type": "application/json",
