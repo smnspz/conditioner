@@ -11,6 +11,21 @@ from conditioner.core.adapters.ai.gemini.workout_generation_provider import (
     GeminiWorkoutGenerationProvider,
 )
 from conditioner.core.adapters.google.oauth_client import GoogleOAuthClient
+from conditioner.core.adapters.persistence.d1.client import D1Client
+from conditioner.core.adapters.persistence.d1.constraints_repository import (
+    D1ConstraintsRepository,
+)
+from conditioner.core.adapters.persistence.d1.credentials_repository import (
+    D1CredentialsRepository,
+)
+from conditioner.core.adapters.persistence.d1.equipment_repository import D1EquipmentRepository
+from conditioner.core.adapters.persistence.d1.metrics_repository import D1MetricsRepository
+from conditioner.core.adapters.persistence.d1.questionnaire_repository import (
+    D1QuestionnaireRepository,
+)
+from conditioner.core.adapters.persistence.d1.readiness_repository import D1ReadinessRepository
+from conditioner.core.adapters.persistence.d1.user_repository import D1UserRepository
+from conditioner.core.adapters.persistence.d1.workout_repository import D1WorkoutRepository
 from conditioner.core.adapters.persistence.sqlite.constraints_repository import (
     SqliteConstraintsRepository,
 )
@@ -51,16 +66,57 @@ from conditioner.core.services.auth.access_tokens import AccessTokenService, Inv
 from conditioner.core.services.auth.jwt_tokens import JwtSigner
 from conditioner.core.services.auth.oauth_state import OAuthStateService
 from conditioner.core.services.auth.token_cipher import TokenCipher
-from conditioner.shared.config import Settings, WorkoutGenerationEngine, get_settings
+from conditioner.shared.config import (
+    PersistenceEngine,
+    Settings,
+    WorkoutGenerationEngine,
+    get_settings,
+)
 from conditioner.shared.constants import Constants
+
+
+def get_d1_client(settings: Annotated[Settings, Depends(get_settings)]) -> D1Client | None:
+    """Resolve the D1 REST client when persistence_engine is D1, else None."""
+
+    if settings.persistence_engine != PersistenceEngine.D1:
+        return None
+
+    if not settings.cloudflare_account_id or not settings.cloudflare_api_token:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=(
+                "CONDITIONER_CLOUDFLARE_ACCOUNT_ID and CONDITIONER_CLOUDFLARE_API_TOKEN "
+                "must be set when persistence_engine is 'd1'"
+            ),
+        )
+    if not settings.cloudflare_d1_database_id:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=(
+                "CONDITIONER_CLOUDFLARE_D1_DATABASE_ID must be set when "
+                "persistence_engine is 'd1'"
+            ),
+        )
+
+    # Return D1 REST client
+    return D1Client(
+        account_id=settings.cloudflare_account_id,
+        database_id=settings.cloudflare_d1_database_id,
+        api_token=settings.cloudflare_api_token,
+    )
 
 
 def get_user_repository(
     settings: Annotated[Settings, Depends(get_settings)],
+    d1_client: Annotated[D1Client | None, Depends(get_d1_client)] = None,
 ) -> UserRepository:
-    """Resolve the SQLite-backed user repository."""
+    """Resolve the active user repository, per persistence_engine."""
 
-    # Return user repository
+    if settings.persistence_engine == PersistenceEngine.D1:
+        # Return D1-backed user repository
+        return D1UserRepository(d1_client)  # type: ignore[arg-type]
+
+    # Return SQLite-backed user repository
     return SqliteUserRepository(settings.database_path)
 
 
@@ -74,28 +130,43 @@ def get_token_cipher(settings: Annotated[Settings, Depends(get_settings)]) -> To
 def get_credentials_repository(
     settings: Annotated[Settings, Depends(get_settings)],
     cipher: Annotated[TokenCipher, Depends(get_token_cipher)],
+    d1_client: Annotated[D1Client | None, Depends(get_d1_client)] = None,
 ) -> CredentialsRepository:
-    """Resolve the SQLite-backed credentials repository."""
+    """Resolve the active credentials repository, per persistence_engine."""
 
-    # Return credentials repository
+    if settings.persistence_engine == PersistenceEngine.D1:
+        # Return D1-backed credentials repository
+        return D1CredentialsRepository(d1_client, cipher)  # type: ignore[arg-type]
+
+    # Return SQLite-backed credentials repository
     return SqliteCredentialsRepository(settings.database_path, cipher)
 
 
 def get_constraints_repository(
     settings: Annotated[Settings, Depends(get_settings)],
+    d1_client: Annotated[D1Client | None, Depends(get_d1_client)] = None,
 ) -> ConstraintsRepository:
-    """Resolve the SQLite-backed workout constraints repository."""
+    """Resolve the active workout constraints repository, per persistence_engine."""
 
-    # Return constraints repository
+    if settings.persistence_engine == PersistenceEngine.D1:
+        # Return D1-backed constraints repository
+        return D1ConstraintsRepository(d1_client)  # type: ignore[arg-type]
+
+    # Return SQLite-backed constraints repository
     return SqliteConstraintsRepository(settings.database_path)
 
 
 def get_equipment_repository(
     settings: Annotated[Settings, Depends(get_settings)],
+    d1_client: Annotated[D1Client | None, Depends(get_d1_client)] = None,
 ) -> EquipmentRepository:
-    """Resolve the SQLite-backed equipment catalog repository."""
+    """Resolve the active equipment catalog repository, per persistence_engine."""
 
-    # Return equipment repository
+    if settings.persistence_engine == PersistenceEngine.D1:
+        # Return D1-backed equipment repository
+        return D1EquipmentRepository(d1_client)  # type: ignore[arg-type]
+
+    # Return SQLite-backed equipment repository
     return SqliteEquipmentRepository(settings.database_path)
 
 
@@ -124,10 +195,15 @@ def get_workout_generation_provider(
 
 def get_workout_repository(
     settings: Annotated[Settings, Depends(get_settings)],
+    d1_client: Annotated[D1Client | None, Depends(get_d1_client)] = None,
 ) -> WorkoutRepository:
-    """Resolve the SQLite-backed workout repository."""
+    """Resolve the active workout repository, per persistence_engine."""
 
-    # Return workout repository
+    if settings.persistence_engine == PersistenceEngine.D1:
+        # Return D1-backed workout repository
+        return D1WorkoutRepository(d1_client)  # type: ignore[arg-type]
+
+    # Return SQLite-backed workout repository
     return SqliteWorkoutRepository(settings.database_path)
 
 
@@ -170,28 +246,43 @@ def get_oauth_state_service(
 
 def get_questionnaire_repository(
     settings: Annotated[Settings, Depends(get_settings)],
+    d1_client: Annotated[D1Client | None, Depends(get_d1_client)] = None,
 ) -> QuestionnaireRepository:
-    """Resolve the SQLite-backed questionnaire repository."""
+    """Resolve the active questionnaire repository, per persistence_engine."""
 
-    # Return questionnaire repository
+    if settings.persistence_engine == PersistenceEngine.D1:
+        # Return D1-backed questionnaire repository
+        return D1QuestionnaireRepository(d1_client)  # type: ignore[arg-type]
+
+    # Return SQLite-backed questionnaire repository
     return SqliteQuestionnaireRepository(settings.database_path)
 
 
 def get_metrics_repository(
     settings: Annotated[Settings, Depends(get_settings)],
+    d1_client: Annotated[D1Client | None, Depends(get_d1_client)] = None,
 ) -> MetricsRepository:
-    """Resolve the SQLite-backed wearable metrics repository."""
+    """Resolve the active wearable metrics repository, per persistence_engine."""
 
-    # Return metrics repository
+    if settings.persistence_engine == PersistenceEngine.D1:
+        # Return D1-backed metrics repository
+        return D1MetricsRepository(d1_client)  # type: ignore[arg-type]
+
+    # Return SQLite-backed metrics repository
     return SqliteMetricsRepository(settings.database_path)
 
 
 def get_readiness_repository(
     settings: Annotated[Settings, Depends(get_settings)],
+    d1_client: Annotated[D1Client | None, Depends(get_d1_client)] = None,
 ) -> ReadinessRepository:
-    """Resolve the SQLite-backed readiness score repository."""
+    """Resolve the active readiness score repository, per persistence_engine."""
 
-    # Return readiness repository
+    if settings.persistence_engine == PersistenceEngine.D1:
+        # Return D1-backed readiness repository
+        return D1ReadinessRepository(d1_client)  # type: ignore[arg-type]
+
+    # Return SQLite-backed readiness repository
     return SqliteReadinessRepository(settings.database_path)
 
 

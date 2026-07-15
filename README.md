@@ -22,15 +22,28 @@ Copy `.env.example` to `.env` and fill in:
   ```
 - `CONDITIONER_GEMINI_API_KEY` — API key for the Gemini API, used to generate weekly workout plans.
 - `CONDITIONER_WORKOUT_GENERATION_ENGINE` — which `WorkoutGenerationProvider` adapter is active: `gemini` (default) or `cloudflare`.
-- `CONDITIONER_CLOUDFLARE_ACCOUNT_ID` / `CONDITIONER_CLOUDFLARE_API_TOKEN` — only required when the engine above is `cloudflare`. The token needs Workers AI permission; the account id is in the Cloudflare dashboard sidebar or via `wrangler whoami`.
+- `CONDITIONER_PERSISTENCE_ENGINE` — which persistence adapter backs every repository port: `sqlite` (default) or `d1`.
+- `CONDITIONER_CLOUDFLARE_ACCOUNT_ID` / `CONDITIONER_CLOUDFLARE_API_TOKEN` — required when the workout generation engine is `cloudflare` or the persistence engine is `d1`. The token needs Workers AI permission for the former, D1 edit permission for the latter; the account id is in the Cloudflare dashboard sidebar or via `wrangler whoami`.
+- `CONDITIONER_CLOUDFLARE_D1_DATABASE_ID` — only required when the persistence engine is `d1`.
 
 ## Database
 
-Migrations are managed with [yoyo](https://ollycope.com/software/yoyo/latest/) against a local SQLite database at `data/conditioner.db`.
+By default, migrations are managed with [yoyo](https://ollycope.com/software/yoyo/latest/) against a local SQLite database at `data/conditioner.db`.
 
 ```bash
 poetry run yoyo apply     # apply pending migrations
 poetry run yoyo list      # show migration status
+```
+
+### Cloudflare D1
+
+When `CONDITIONER_PERSISTENCE_ENGINE=d1`, every repository talks to a D1 database over Cloudflare's REST API instead (`D1Client` in `core/adapters/persistence/d1`) — the app keeps running as a normal FastAPI/uvicorn process, it just points at D1 instead of a local SQLite file.
+
+Schema is managed separately from yoyo, with [wrangler](https://developers.cloudflare.com/workers/wrangler/)'s own migration tooling against the same DDL, mirrored under `migrations_d1/`:
+
+```bash
+wrangler d1 create conditioner                       # once, then paste the id into wrangler.jsonc
+wrangler d1 migrations apply conditioner --remote     # apply migrations_d1/*.sql
 ```
 
 ## Running the API

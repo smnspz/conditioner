@@ -17,7 +17,7 @@ class Constants:
 
     _GEMINI_WORKOUT_MODEL = "gemini-3.5-flash"
 
-    _CLOUDFLARE_AI_BASE_URL = "https://api.cloudflare.com/client/v4"
+    _CLOUDFLARE_API_BASE_URL = "https://api.cloudflare.com/client/v4"
     _CLOUDFLARE_WORKOUT_MODEL = "@cf/meta/llama-3.1-70b-instruct"
     _CLOUDFLARE_WORKOUT_MAX_TOKENS = 4096
 
@@ -46,8 +46,8 @@ class Constants:
         return cls._GEMINI_WORKOUT_MODEL
 
     @classmethod
-    def cloudflare_ai_base_url(cls) -> str:
-        return cls._CLOUDFLARE_AI_BASE_URL
+    def cloudflare_api_base_url(cls) -> str:
+        return cls._CLOUDFLARE_API_BASE_URL
 
     @classmethod
     def cloudflare_workout_model(cls) -> str:

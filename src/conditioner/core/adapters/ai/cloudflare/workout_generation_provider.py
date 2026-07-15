@@ -29,7 +29,7 @@ class CloudflareAIWorkoutGenerationProvider(WorkoutGenerationProvider):
     def __init__(self, account_id: str, api_token: str) -> None:
         # Initializations
         self._url = (
-            f"{Constants.cloudflare_ai_base_url()}/accounts/{account_id}"
+            f"{Constants.cloudflare_api_base_url()}/accounts/{account_id}"
             f"/ai/run/{Constants.cloudflare_workout_model()}"
         )
         self._headers = {"Authorization": f"Bearer {api_token}"}

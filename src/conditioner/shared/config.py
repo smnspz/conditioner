@@ -13,6 +13,13 @@ class WorkoutGenerationEngine(StrEnum):
     CLOUDFLARE = "cloudflare"
 
 
+class PersistenceEngine(StrEnum):
+    """Which persistence adapter backs every repository port."""
+
+    SQLITE = "sqlite"
+    D1 = "d1"
+
+
 class Settings(BaseSettings):
     """Application configuration, sourced from environment variables and .env.
 
@@ -25,9 +32,14 @@ class Settings(BaseSettings):
         dev_mode: When true, allows the access-token cookie over plain HTTP (no Secure flag).
         gemini_api_key: API key for the Gemini API, used to generate workout plans.
         workout_generation_engine: Which WorkoutGenerationProvider adapter is active.
-        cloudflare_account_id: Cloudflare account id, required if the Cloudflare engine is active.
-        cloudflare_api_token: Cloudflare API token (Workers AI permission), required if the
-            Cloudflare engine is active.
+        cloudflare_account_id: Cloudflare account id, required if the Cloudflare workout
+            generation engine or the D1 persistence engine is active.
+        cloudflare_api_token: Cloudflare API token, required if the Cloudflare workout
+            generation engine or the D1 persistence engine is active. Needs Workers AI
+            permission for the former, D1 edit permission for the latter.
+        persistence_engine: Which persistence adapter backs every repository port.
+        cloudflare_d1_database_id: D1 database id, required if the D1 persistence engine
+            is active.
     """
 
     database_path: str = "data/conditioner.db"
@@ -40,6 +52,8 @@ class Settings(BaseSettings):
     workout_generation_engine: WorkoutGenerationEngine = WorkoutGenerationEngine.GEMINI
     cloudflare_account_id: str | None = None
     cloudflare_api_token: str | None = None
+    persistence_engine: PersistenceEngine = PersistenceEngine.SQLITE
+    cloudflare_d1_database_id: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env", env_prefix="CONDITIONER_")
 

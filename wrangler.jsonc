@@ -1,0 +1,14 @@
+{
+  // Used only for "wrangler d1 migrations apply" against the REST-accessed D1 database
+  // below — the API itself still runs as a plain FastAPI/uvicorn app, not a Worker.
+  "name": "conditioner",
+  "compatibility_date": "2026-01-01",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "conditioner",
+      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+      "migrations_dir": "migrations_d1"
+    }
+  ]
+}
