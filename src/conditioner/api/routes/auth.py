@@ -22,7 +22,8 @@ from conditioner.core.interfaces.google_oauth_provider import GoogleOAuthProvide
 from conditioner.core.interfaces.user_repository import UserRepository
 from conditioner.core.services.access_tokens import AccessTokenService
 from conditioner.core.services.oauth_state import InvalidOAuthState, OAuthStateService
-from conditioner.shared.constants import BEARER_TOKEN_SCHEME
+from conditioner.shared.config import Settings, get_settings
+from conditioner.shared.constants import ACCESS_TOKEN_COOKIE_NAME, BEARER_TOKEN_SCHEME
 
 router = APIRouter(prefix="/auth/google", tags=["auth"])
 
@@ -57,6 +58,7 @@ async def callback(
     user_repository: Annotated[UserRepository, Depends(get_user_repository)],
     credentials_repository: Annotated[CredentialsRepository, Depends(get_credentials_repository)],
     access_token_service: Annotated[AccessTokenService, Depends(get_access_token_service)],
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> HTMLResponse:
     try:
         state_service.verify(state)
@@ -104,18 +106,25 @@ async def callback(
     # Get signed Bearer token for this user
     token = access_token_service.issue(user.id)
 
-    # Return authentication success page with token stored in localStorage
-    return HTMLResponse(
-        content=f"""<!DOCTYPE html>
+    # Return authentication success page, token delivered via HttpOnly cookie
+    response = HTMLResponse(
+        content="""<!DOCTYPE html>
 <html>
 <head><title>Conditioner — Authenticated</title></head>
 <body>
 <h2>Authentication successful</h2>
-<p>Your access token has been saved.</p>
-<script>
-  localStorage.setItem("access_token", "{token}");
-</script>
+<p>You may close this window.</p>
 </body>
 </html>
 """
     )
+    response.set_cookie(
+        key=ACCESS_TOKEN_COOKIE_NAME,
+        value=token,
+        httponly=True,
+        secure=not settings.dev_mode,
+        samesite="lax",
+    )
+
+    # Return the response
+    return response

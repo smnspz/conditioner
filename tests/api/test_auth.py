@@ -22,6 +22,7 @@ from conditioner.core.services.access_tokens import AccessTokenService
 from conditioner.core.services.jwt_tokens import JwtSigner
 from conditioner.core.services.oauth_state import OAuthStateService
 from conditioner.core.services.token_cipher import TokenCipher
+from conditioner.shared.constants import ACCESS_TOKEN_COOKIE_NAME
 
 _JWT_SIGNER = JwtSigner("test-secret")
 
@@ -80,15 +81,10 @@ def test_login_redirects_to_google_with_state(client: TestClient) -> None:
 
 
 def _token_from_callback(client: TestClient, state: str, code: str = "auth-code") -> str:
-    """Complete the OAuth callback and extract the Bearer token from the success page."""
+    """Complete the OAuth callback and extract the token from the HttpOnly cookie."""
     response = client.get("/auth/google/callback", params={"code": code, "state": state})
     assert response.status_code == 200
-    # Token is embedded in the HTML success page via localStorage.setItem
-    html = response.text
-    marker = 'localStorage.setItem("access_token", "'
-    start = html.index(marker) + len(marker)
-    end = html.index('"', start)
-    return html[start:end]
+    return response.cookies[ACCESS_TOKEN_COOKIE_NAME]
 
 
 def test_callback_creates_user_and_returns_bearer_token(

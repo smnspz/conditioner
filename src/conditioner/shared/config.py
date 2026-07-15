@@ -14,6 +14,7 @@ class Settings(BaseSettings):
         google_redirect_uri: OAuth redirect URI registered in the Google Cloud Console.
         jwt_secret_key: Symmetric key used to sign our own Bearer tokens and OAuth state.
         token_encryption_key: Fernet key used to encrypt stored Google OAuth tokens at rest.
+        dev_mode: When true, allows the access-token cookie over plain HTTP (no Secure flag).
     """
 
     database_path: str = "data/conditioner.db"
@@ -21,6 +22,7 @@ class Settings(BaseSettings):
     google_redirect_uri: str = "http://localhost:9876/auth/google/callback"
     jwt_secret_key: str
     token_encryption_key: str
+    dev_mode: bool = False
 
     model_config = SettingsConfigDict(env_file=".env", env_prefix="CONDITIONER_")
 

@@ -2,8 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from fastapi import Cookie, Depends, HTTPException, status
 
 from conditioner.core.adapters.google.oauth_client import GoogleOAuthClient
 from conditioner.core.adapters.persistence.sqlite.credentials_repository import (
@@ -22,8 +21,7 @@ from conditioner.core.services.jwt_tokens import JwtSigner
 from conditioner.core.services.oauth_state import OAuthStateService
 from conditioner.core.services.token_cipher import TokenCipher
 from conditioner.shared.config import Settings, get_settings
-
-_bearer_scheme = HTTPBearer()
+from conditioner.shared.constants import ACCESS_TOKEN_COOKIE_NAME
 
 
 def get_user_repository(
@@ -99,14 +97,17 @@ def get_questionnaire_repository(
 
 
 async def get_current_user_id(
-    credentials: Annotated[HTTPAuthorizationCredentials, Depends(_bearer_scheme)],
     token_service: Annotated[AccessTokenService, Depends(get_access_token_service)],
+    access_token: Annotated[str | None, Cookie(alias=ACCESS_TOKEN_COOKIE_NAME)] = None,
 ) -> str:
-    """Extract and verify the user ID from the Bearer token in the Authorization header."""
+    """Extract and verify the user ID from the access token cookie."""
+
+    if access_token is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
 
     try:
         # Return verified user ID
-        return token_service.verify(credentials.credentials)
+        return token_service.verify(access_token)
     except InvalidAccessToken as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token"
