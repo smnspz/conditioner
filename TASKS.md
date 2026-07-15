@@ -68,10 +68,21 @@
 - [x] `core`: daily adjustment use case — scales sets/reps/duration/target_load of not-yet-completed sessions from a given day onward by that day's readiness zone (rule-based factor per zone; REST clears the sessions). Completed sessions and past sessions untouched.
 - [x] `core`: regeneration use case — re-prompts the AI port with current constraints + readiness, keeping any session already marked completed in the prior plan instead of the freshly generated one for that date.
 
+#### 7c. Equipment catalog
+
+- [x] `core/domain`: `Equipment` (id, name) — a seeded gear catalog entry, not user-authored.
+- [x] `core/interfaces`: `EquipmentRepository` port (`list_all`, `get_by_ids`) + `core/adapters/persistence/sqlite`: SQLite implementation.
+- [x] Migration: `equipment` table + seed data (14 items: none/bodyweight, dumbbells, barbell, kettlebell, resistance_bands, pull_up_bar, bench, medicine_ball, jump_rope, foam_roller, yoga_mat, plyo_box, battle_ropes, suspension_trainer).
+- [x] API endpoint: `GET /equipment` — read-only list of the catalog, no auth-scoped filtering (same for every user). (No separate service layer — the route calls `EquipmentRepository` directly, it added nothing.)
+- [x] `core/domain`: `WorkoutConstraints.equipment` stays `list[str]`, now documented as catalog ids rather than free text (no storage/migration change needed — ids are still just strings).
+- [x] `api/routes/constraints.py`: validates submitted equipment ids exist in the catalog (422 with the unknown ids if not).
+- [x] Gemini prompt building unchanged — catalog ids (e.g. `dumbbells`, `resistance_bands`) are already human-readable, so no id→name lookup was needed in the prompt.
+
 ### 8. API layer
 - [x] FastAPI routers: `/auth/google/*`, `/questionnaire`, `/readiness`.
 - [x] `/workouts` router — `POST /workouts/{week_start}/generate`, `POST /workouts/{week_start}/regenerate`, `POST /workouts/{day}/adjust` (all 422 if prerequisites missing), `GET /workouts/{week_start}`.
 - [x] Constraints endpoint(s) (set/get `WorkoutConstraints`) — see task 7a.
+- [x] `GET /equipment` — gear catalog, see task 7c.
 
 ### 9. GDPR compliance
 - [ ] Consent capture at signup/OAuth.

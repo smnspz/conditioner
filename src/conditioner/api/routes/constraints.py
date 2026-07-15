@@ -3,9 +3,14 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from conditioner.api.dependencies import get_constraints_repository, get_current_user_id
+from conditioner.api.dependencies import (
+    get_constraints_repository,
+    get_current_user_id,
+    get_equipment_repository,
+)
 from conditioner.core.domain.workout.constraints import TrainingGoal, WorkoutConstraints
 from conditioner.core.interfaces.workout.constraints_repository import ConstraintsRepository
+from conditioner.core.interfaces.workout.equipment_repository import EquipmentRepository
 
 router = APIRouter(prefix="/constraints", tags=["constraints"])
 
@@ -38,8 +43,18 @@ async def upsert(
     body: WorkoutConstraintsRequest,
     user_id: Annotated[str, Depends(get_current_user_id)],
     repo: Annotated[ConstraintsRepository, Depends(get_constraints_repository)],
+    equipment_repo: Annotated[EquipmentRepository, Depends(get_equipment_repository)],
 ) -> WorkoutConstraintsOut:
     """Create or update the authenticated user's workout constraints."""
+
+    # Get catalog entries matching the submitted equipment ids, to validate them
+    matched = await equipment_repo.get_by_ids(body.equipment)
+    unknown = set(body.equipment) - {item.id for item in matched}
+    if unknown:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"Unknown equipment id(s): {', '.join(sorted(unknown))}",
+        )
 
     # Save constraints to persistence
     await repo.save(

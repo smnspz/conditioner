@@ -14,6 +14,9 @@ from conditioner.core.adapters.persistence.sqlite.constraints_repository import 
 from conditioner.core.adapters.persistence.sqlite.credentials_repository import (
     SqliteCredentialsRepository,
 )
+from conditioner.core.adapters.persistence.sqlite.equipment_repository import (
+    SqliteEquipmentRepository,
+)
 from conditioner.core.adapters.persistence.sqlite.metrics_repository import (
     SqliteMetricsRepository,
 )
@@ -36,6 +39,7 @@ from conditioner.core.interfaces.questionnaire.questionnaire_repository import (
 from conditioner.core.interfaces.readiness.readiness_repository import ReadinessRepository
 from conditioner.core.interfaces.wearables.metrics_repository import MetricsRepository
 from conditioner.core.interfaces.workout.constraints_repository import ConstraintsRepository
+from conditioner.core.interfaces.workout.equipment_repository import EquipmentRepository
 from conditioner.core.interfaces.workout.workout_generation_provider import (
     WorkoutGenerationProvider,
 )
@@ -81,6 +85,15 @@ def get_constraints_repository(
 
     # Return constraints repository
     return SqliteConstraintsRepository(settings.database_path)
+
+
+def get_equipment_repository(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> EquipmentRepository:
+    """Resolve the SQLite-backed equipment catalog repository."""
+
+    # Return equipment repository
+    return SqliteEquipmentRepository(settings.database_path)
 
 
 def get_workout_generation_provider(

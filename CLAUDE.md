@@ -76,7 +76,7 @@ Weekly workout plans are produced by prompting a generative AI (Gemini first) wi
 
 Set and updated by the user via API, persisted in SQLite (one row per user, versioned/updated in place):
 
-- **Equipment**: what the user has available to train with.
+- **Equipment**: what the user has available to train with, chosen from a seeded gear catalog (not free-form text). The catalog is persisted in SQLite, exposed via a service and a read-only API endpoint so clients can list valid choices; `WorkoutConstraints.equipment` stores references into that catalog, not arbitrary strings.
 - **Goal**: the training objective. Only "MMA conditioning" exists for now, but the field must not be hardcoded to a single value — model it so more goals can be added later.
 - **Available time per day**: how long the user can train each day. Adjustable at any time; when changed, the affected day's (or remaining days') workout must be regenerated to fit the new time budget.
 

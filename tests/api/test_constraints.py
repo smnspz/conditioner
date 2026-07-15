@@ -8,10 +8,14 @@ from conditioner.api.dependencies import (
     get_access_token_service,
     get_constraints_repository,
     get_current_user_id,
+    get_equipment_repository,
 )
 from conditioner.api.main import app
 from conditioner.core.adapters.persistence.sqlite.constraints_repository import (
     SqliteConstraintsRepository,
+)
+from conditioner.core.adapters.persistence.sqlite.equipment_repository import (
+    SqliteEquipmentRepository,
 )
 from conditioner.core.services.auth.access_tokens import AccessTokenService
 from conditioner.core.services.auth.jwt_tokens import JwtSigner
@@ -34,6 +38,9 @@ def client(db_path: str) -> Iterator[TestClient]:
     repo = SqliteConstraintsRepository(db_path)
     token_service = AccessTokenService(_JWT_SIGNER)
     app.dependency_overrides[get_constraints_repository] = lambda: repo
+    app.dependency_overrides[get_equipment_repository] = lambda: SqliteEquipmentRepository(
+        db_path
+    )
     app.dependency_overrides[get_access_token_service] = lambda: token_service
     # Bypass JWT verification — return a fixed user ID for all requests
     app.dependency_overrides[get_current_user_id] = lambda: _USER_ID
@@ -116,6 +123,20 @@ def test_upsert_rejects_weekday_out_of_range(client: TestClient) -> None:
             "equipment": ["dumbbells"],
             "goal": "mma_conditioning",
             "available_minutes_by_weekday": {"7": 60},
+        },
+        headers={"Authorization": "Bearer dummy"},
+    )
+
+    assert response.status_code == 422
+
+
+def test_upsert_rejects_unknown_equipment_id(client: TestClient) -> None:
+    response = client.put(
+        "/constraints",
+        json={
+            "equipment": ["dumbbells", "not-a-real-id"],
+            "goal": "mma_conditioning",
+            "available_minutes_by_weekday": {},
         },
         headers={"Authorization": "Bearer dummy"},
     )

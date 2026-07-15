@@ -16,7 +16,8 @@ class WorkoutConstraints:
 
     Attributes:
         user_id: The user these constraints belong to.
-        equipment: The equipment the user has available to train with.
+        equipment: Ids of the equipment catalog entries (see Equipment) the user has
+            available to train with.
         goal: The user's training objective.
         available_minutes_by_weekday: Minutes available to train on each weekday,
             keyed 0 (Monday) through 6 (Sunday). Missing keys mean no session that day.
