@@ -86,7 +86,7 @@ async def test_generate_weekly_plan_calls_correct_url_with_structured_output_sch
     args, kwargs = post_mock.call_args
     assert args[0] == (
         "https://api.cloudflare.com/client/v4/accounts/acct-1/ai/run/"
-        "@cf/google/gemini-3.1-flash-lite"
+        "@cf/meta/llama-3.1-8b-instruct"
     )
     assert kwargs["headers"]["Authorization"] == "Bearer test-token"
     assert kwargs["json"]["response_format"]["type"] == "json_schema"
