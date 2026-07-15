@@ -21,9 +21,13 @@ class WorkoutConstraints:
         goal: The user's training objective.
         available_minutes_by_weekday: Minutes available to train on each weekday,
             keyed 0 (Monday) through 6 (Sunday). Missing keys mean no session that day.
+        initial_perceived_fitness: Self-reported fitness level on a 1–10 scale, set
+            once during onboarding. Used as the readiness proxy for the first workout
+            generation, before any computed readiness scores exist.
     """
 
     user_id: str
     equipment: list[str]
     goal: TrainingGoal
     available_minutes_by_weekday: dict[int, int] = field(default_factory=dict[int, int])
+    initial_perceived_fitness: int | None = None

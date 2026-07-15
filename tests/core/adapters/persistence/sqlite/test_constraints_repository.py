@@ -55,3 +55,38 @@ async def test_save_upserts_existing_constraints(db_path: str) -> None:
 async def test_get_by_user_id_returns_none_when_missing(db_path: str) -> None:
     repo = SqliteConstraintsRepository(db_path)
     assert await repo.get_by_user_id("missing") is None
+
+
+async def test_initial_perceived_fitness_round_trips(db_path: str) -> None:
+    await _seed_user(db_path, "user-2")
+    repo = SqliteConstraintsRepository(db_path)
+    constraints = WorkoutConstraints(
+        user_id="user-2",
+        equipment=["dumbbells"],
+        goal=TrainingGoal.MMA_CONDITIONING,
+        available_minutes_by_weekday={0: 60},
+        initial_perceived_fitness=8,
+    )
+
+    await repo.save(constraints)
+
+    result = await repo.get_by_user_id("user-2")
+    assert result is not None
+    assert result.initial_perceived_fitness == 8
+
+
+async def test_initial_perceived_fitness_defaults_to_none(db_path: str) -> None:
+    await _seed_user(db_path, "user-3")
+    repo = SqliteConstraintsRepository(db_path)
+    constraints = WorkoutConstraints(
+        user_id="user-3",
+        equipment=[],
+        goal=TrainingGoal.MMA_CONDITIONING,
+        available_minutes_by_weekday={},
+    )
+
+    await repo.save(constraints)
+
+    result = await repo.get_by_user_id("user-3")
+    assert result is not None
+    assert result.initial_perceived_fitness is None

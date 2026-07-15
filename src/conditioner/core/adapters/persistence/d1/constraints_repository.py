@@ -20,18 +20,21 @@ class D1ConstraintsRepository(ConstraintsRepository):
         await self._client.execute(
             """
             INSERT INTO workout_constraints
-                (user_id, equipment, goal, available_minutes_by_weekday)
-            VALUES (?, ?, ?, ?)
+                (user_id, equipment, goal, available_minutes_by_weekday,
+                 initial_perceived_fitness)
+            VALUES (?, ?, ?, ?, ?)
             ON CONFLICT (user_id) DO UPDATE SET
                 equipment = excluded.equipment,
                 goal = excluded.goal,
-                available_minutes_by_weekday = excluded.available_minutes_by_weekday
+                available_minutes_by_weekday = excluded.available_minutes_by_weekday,
+                initial_perceived_fitness = excluded.initial_perceived_fitness
             """,
             (
                 constraints.user_id,
                 ",".join(constraints.equipment),
                 constraints.goal.value,
                 json.dumps(constraints.available_minutes_by_weekday),
+                constraints.initial_perceived_fitness,
             ),
         )
 
@@ -55,4 +58,5 @@ class D1ConstraintsRepository(ConstraintsRepository):
             available_minutes_by_weekday={
                 int(k): v for k, v in json.loads(row["available_minutes_by_weekday"]).items()
             },
+            initial_perceived_fitness=row.get("initial_perceived_fitness"),
         )

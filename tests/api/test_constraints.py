@@ -142,3 +142,49 @@ def test_upsert_rejects_unknown_equipment_id(client: TestClient) -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_upsert_stores_initial_perceived_fitness(client: TestClient) -> None:
+    response = client.put(
+        "/constraints",
+        json={
+            "equipment": ["dumbbells"],
+            "goal": "mma_conditioning",
+            "available_minutes_by_weekday": {},
+            "initial_perceived_fitness": 7,
+        },
+        headers={"Authorization": "Bearer dummy"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["initial_perceived_fitness"] == 7
+
+
+def test_upsert_rejects_perceived_fitness_out_of_range(client: TestClient) -> None:
+    for bad_value in [0, 11]:
+        response = client.put(
+            "/constraints",
+            json={
+                "equipment": ["dumbbells"],
+                "goal": "mma_conditioning",
+                "available_minutes_by_weekday": {},
+                "initial_perceived_fitness": bad_value,
+            },
+            headers={"Authorization": "Bearer dummy"},
+        )
+        assert response.status_code == 422
+
+
+def test_initial_perceived_fitness_is_optional(client: TestClient) -> None:
+    response = client.put(
+        "/constraints",
+        json={
+            "equipment": ["dumbbells"],
+            "goal": "mma_conditioning",
+            "available_minutes_by_weekday": {},
+        },
+        headers={"Authorization": "Bearer dummy"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["initial_perceived_fitness"] is None
