@@ -46,11 +46,11 @@ def sample_points():
         }
     }]
     steps = [{
+        "civilStartTime": {"date": {"year": 2024, "month": 8, "day": 14}},
+        "civilEndTime": {"date": {"year": 2024, "month": 8, "day": 15}},
         "steps": {
-            "startTime": "2024-08-14T00:00:00Z",
-            "endTime": "2024-08-15T00:00:00Z",
-            "count": "8432",
-        }
+            "countSum": "8432",
+        },
     }]
     return hrv, rhr, sleep, steps
 

@@ -44,10 +44,11 @@ class GoogleHealthClient(WearableDataProvider):
         end_excl = end + timedelta(days=1)
 
         async with httpx.AsyncClient(transport=self._transport) as client:
-            # Set HRV filter string for the date range
+            # Set HRV filter string for the date range (filter paths are snake_case,
+            # unlike the camelCase JSON response bodies)
             hrv_filter = (
-                f'dailyHeartRateVariability.date >= "{start}"'
-                f' AND dailyHeartRateVariability.date < "{end_excl}"'
+                f'daily_heart_rate_variability.date >= "{start}"'
+                f' AND daily_heart_rate_variability.date < "{end_excl}"'
             )
 
             # Get HRV data points
@@ -55,8 +56,8 @@ class GoogleHealthClient(WearableDataProvider):
 
             # Set RHR filter string for the date range
             rhr_filter = (
-                f'dailyRestingHeartRate.date >= "{start}"'
-                f' AND dailyRestingHeartRate.date < "{end_excl}"'
+                f'daily_resting_heart_rate.date >= "{start}"'
+                f' AND daily_resting_heart_rate.date < "{end_excl}"'
             )
 
             # Get RHR data points
@@ -65,10 +66,11 @@ class GoogleHealthClient(WearableDataProvider):
             # Query from previous evening to capture sessions that start before midnight
             prev_evening = (start - timedelta(days=1)).isoformat()
 
-            # Set sleep filter string spanning overnight sessions
+            # Set sleep filter string spanning overnight sessions. start_time isn't a
+            # filterable member for this data type — only end_time is.
             sleep_filter = (
-                f'sleep.interval.start_time >= "{prev_evening}T18:00:00Z"'
-                f' AND sleep.interval.start_time < "{end_excl.isoformat()}T12:00:00Z"'
+                f'sleep.interval.end_time >= "{prev_evening}T18:00:00Z"'
+                f' AND sleep.interval.end_time < "{end_excl.isoformat()}T12:00:00Z"'
             )
 
             # Get sleep data points
@@ -126,11 +128,12 @@ class GoogleHealthClient(WearableDataProvider):
 
         url = f"{GOOGLE_HEALTH_BASE_URL}/users/me/dataTypes/{data_type}/dataPoints:dailyRollUp"
 
-        # Set request body with date range and daily window
+        # Set request body with date range (as CivilDateTime, not RFC-3339 timestamps) and
+        # daily window
         body = {
             "range": {
-                "startTime": f"{start.isoformat()}T00:00:00Z",
-                "endTime": f"{end_excl.isoformat()}T00:00:00Z",
+                "start": {"date": _civil_date(start)},
+                "end": {"date": _civil_date(end_excl)},
             },
             "windowSizeDays": 1,
         }
@@ -140,7 +143,7 @@ class GoogleHealthClient(WearableDataProvider):
         r.raise_for_status()
 
         # Return daily rolled-up data points
-        return list(r.json().get("dataPoints", []))
+        return list(r.json().get("rollupDataPoints", []))
 
 
 def _build_metrics(
@@ -245,7 +248,7 @@ def _build_day(
     steps: int | None = None
     if steps_point:
         # Get raw step count value
-        count = steps_point["steps"].get("count")
+        count = steps_point["steps"].get("countSum")
 
         # Set step count as int or None
         steps = int(count) if count is not None else None
@@ -322,10 +325,15 @@ def _date_from_struct(d: JsonDict) -> date:
 
 
 def _date_from_steps(point: JsonDict) -> date:
-    """Extract the date from a steps dailyRollUp point via its startTime."""
+    """Extract the date from a steps dailyRollUp point via its civilStartTime."""
 
-    start_str = point["steps"].get("startTime", "")
-    return _parse_ts(start_str).date() if start_str else date.min
+    return _date_from_struct(point["civilStartTime"]["date"])
+
+
+def _civil_date(day: date) -> JsonDict:
+    """Build a CivilDateTime Date object {year, month, day} from a Python date."""
+
+    return {"year": day.year, "month": day.month, "day": day.day}
 
 
 def _sleep_minutes(sleep_data: JsonDict) -> int:
