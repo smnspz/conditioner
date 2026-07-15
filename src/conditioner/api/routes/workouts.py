@@ -18,10 +18,12 @@ from conditioner.core.interfaces.workout.workout_generation_provider import (
     WorkoutGenerationProvider,
 )
 from conditioner.core.interfaces.workout.workout_repository import WorkoutRepository
+from conditioner.core.services.workout.adjust_daily_sessions import adjust_daily_sessions
 from conditioner.core.services.workout.generate_weekly_plan import (
     PrerequisitesMissingError,
     generate_weekly_plan,
 )
+from conditioner.core.services.workout.regenerate_week import regenerate_week
 
 router = APIRouter(prefix="/workouts", tags=["workouts"])
 
@@ -112,6 +114,61 @@ async def generate(
         ) from exc
 
     # Return the generated workout plan
+    return _to_out(workout)
+
+
+@router.post("/{week_start}/regenerate", response_model=WorkoutOut)
+async def regenerate(
+    week_start: Date,
+    user_id: Annotated[str, Depends(get_current_user_id)],
+    constraints_repository: Annotated[
+        ConstraintsRepository, Depends(get_constraints_repository)
+    ],
+    readiness_repository: Annotated[ReadinessRepository, Depends(get_readiness_repository)],
+    generation_provider: Annotated[
+        WorkoutGenerationProvider, Depends(get_workout_generation_provider)
+    ],
+    workout_repository: Annotated[WorkoutRepository, Depends(get_workout_repository)],
+) -> WorkoutOut:
+    """Regenerate the authenticated user's weekly plan, e.g. after constraints changed."""
+
+    try:
+        workout = await regenerate_week(
+            user_id,
+            week_start,
+            constraints_repository,
+            readiness_repository,
+            generation_provider,
+            workout_repository,
+        )
+    except PrerequisitesMissingError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        ) from exc
+
+    # Return the regenerated workout plan
+    return _to_out(workout)
+
+
+@router.post("/{day}/adjust", response_model=WorkoutOut)
+async def adjust(
+    day: Date,
+    user_id: Annotated[str, Depends(get_current_user_id)],
+    readiness_repository: Annotated[ReadinessRepository, Depends(get_readiness_repository)],
+    workout_repository: Annotated[WorkoutRepository, Depends(get_workout_repository)],
+) -> WorkoutOut:
+    """Scale the authenticated user's remaining sessions from day onward by that day's readiness."""
+
+    try:
+        workout = await adjust_daily_sessions(
+            user_id, day, readiness_repository, workout_repository
+        )
+    except PrerequisitesMissingError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        ) from exc
+
+    # Return the adjusted workout plan
     return _to_out(workout)
 
 

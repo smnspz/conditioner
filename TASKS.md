@@ -65,12 +65,12 @@
 #### 7b. Generation logic
 
 - [x] `core`: weekly plan generator, prompting the AI port with constraints + readiness; refuses to generate (`PrerequisitesMissingError`) if either is missing. (No progressive load yet — prior-week history isn't passed to the AI port.)
-- [ ] `core`: daily adjustment use case that modifies remaining sessions based on readiness zone.
-- [ ] `core`: regeneration use case triggered when constraints (e.g. available time) change mid-week, leaving already-completed sessions untouched.
+- [x] `core`: daily adjustment use case — scales sets/reps/duration/target_load of not-yet-completed sessions from a given day onward by that day's readiness zone (rule-based factor per zone; REST clears the sessions). Completed sessions and past sessions untouched.
+- [x] `core`: regeneration use case — re-prompts the AI port with current constraints + readiness, keeping any session already marked completed in the prior plan instead of the freshly generated one for that date.
 
 ### 8. API layer
 - [x] FastAPI routers: `/auth/google/*`, `/questionnaire`, `/readiness`.
-- [x] `/workouts` router — `POST /workouts/{week_start}/generate` (422 if prerequisites missing), `GET /workouts/{week_start}`. Daily adjustment/regeneration endpoints still blocked on the rest of 7b.
+- [x] `/workouts` router — `POST /workouts/{week_start}/generate`, `POST /workouts/{week_start}/regenerate`, `POST /workouts/{day}/adjust` (all 422 if prerequisites missing), `GET /workouts/{week_start}`.
 - [x] Constraints endpoint(s) (set/get `WorkoutConstraints`) — see task 7a.
 
 ### 9. GDPR compliance

@@ -26,7 +26,7 @@ from conditioner.core.adapters.persistence.sqlite.workout_repository import (
 )
 from conditioner.core.domain.readiness.readiness import ReadinessScore, ReadinessZone
 from conditioner.core.domain.workout.constraints import TrainingGoal, WorkoutConstraints
-from conditioner.core.domain.workout.workout import Workout
+from conditioner.core.domain.workout.workout import Exercise, ExerciseModality, Session, Workout
 from conditioner.core.services.auth.access_tokens import AccessTokenService
 from conditioner.core.services.auth.jwt_tokens import JwtSigner
 
@@ -101,3 +101,83 @@ def test_get_by_week_returns_404_when_missing(client: TestClient) -> None:
     response = client.get(f"/workouts/{_WEEK_START}", headers={"Authorization": "Bearer dummy"})
 
     assert response.status_code == 404
+
+
+def test_adjust_rejects_when_readiness_missing(client: TestClient) -> None:
+    response = client.post(
+        f"/workouts/{_WEEK_START}/adjust", headers={"Authorization": "Bearer dummy"}
+    )
+
+    assert response.status_code == 422
+
+
+async def test_adjust_scales_remaining_sessions(client: TestClient, db_path: str) -> None:
+    await SqliteReadinessRepository(db_path).save(
+        ReadinessScore(
+            user_id=_USER_ID, date=_WEEK_START, score=55, zone=ReadinessZone.MODERATE
+        )
+    )
+    await SqliteWorkoutRepository(db_path).save(
+        Workout(
+            id="workout-1",
+            user_id=_USER_ID,
+            week_start=_WEEK_START,
+            sessions=[
+                Session(
+                    id="session-1",
+                    date=_WEEK_START,
+                    exercises=[
+                        Exercise(
+                            id="exercise-1",
+                            name="Back squat",
+                            modality=ExerciseModality.STRENGTH,
+                            sets=4,
+                        )
+                    ],
+                )
+            ],
+        )
+    )
+
+    response = client.post(
+        f"/workouts/{_WEEK_START}/adjust", headers={"Authorization": "Bearer dummy"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["sessions"][0]["exercises"][0]["sets"] == 3
+
+
+def test_regenerate_rejects_when_constraints_missing(client: TestClient) -> None:
+    response = client.post(
+        f"/workouts/{_WEEK_START}/regenerate", headers={"Authorization": "Bearer dummy"}
+    )
+
+    assert response.status_code == 422
+
+
+async def test_regenerate_succeeds_when_prerequisites_set(
+    client: TestClient, db_path: str
+) -> None:
+    await SqliteConstraintsRepository(db_path).save(
+        WorkoutConstraints(
+            user_id=_USER_ID,
+            equipment=["dumbbells"],
+            goal=TrainingGoal.MMA_CONDITIONING,
+            available_minutes_by_weekday={0: 30},
+        )
+    )
+    await SqliteReadinessRepository(db_path).save(
+        ReadinessScore(user_id=_USER_ID, date=_WEEK_START, score=75, zone=ReadinessZone.GOOD)
+    )
+    provider = AsyncMock()
+    provider.generate_weekly_plan = AsyncMock(
+        return_value=Workout(id="workout-2", user_id=_USER_ID, week_start=_WEEK_START)
+    )
+    app.dependency_overrides[get_workout_generation_provider] = lambda: provider
+
+    response = client.post(
+        f"/workouts/{_WEEK_START}/regenerate", headers={"Authorization": "Bearer dummy"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == "workout-2"
