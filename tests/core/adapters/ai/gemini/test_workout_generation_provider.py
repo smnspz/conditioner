@@ -30,6 +30,7 @@ async def test_generate_weekly_plan_maps_structured_response_to_workout() -> Non
                             "sets": 5,
                             "reps": 5,
                             "target_load": 80.0,
+                            "equipment": "barbell",
                         }
                     ],
                 }

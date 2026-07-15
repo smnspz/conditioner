@@ -8,8 +8,8 @@ from google import genai
 from google.genai.interactions import Interaction
 
 from conditioner.core.adapters.ai.workout_prompt import (
-    WeeklyPlanSchema,
     build_prompt,
+    build_weekly_plan_schema,
     sessions_from_plan,
 )
 from conditioner.core.domain.readiness.readiness import ReadinessScore
@@ -41,6 +41,9 @@ class GeminiWorkoutGenerationProvider(WorkoutGenerationProvider):
     ) -> Workout:
         """Prompt Gemini for a weekly plan and map the structured response to a Workout."""
 
+        # Get the per-request schema, constraining exercise equipment to what's available
+        schema_cls = build_weekly_plan_schema(constraints)
+
         # Get the model's structured response for this week's constraints and readiness
         interaction = await self._client.aio.interactions.create(
             model=GEMINI_WORKOUT_MODEL,
@@ -48,14 +51,14 @@ class GeminiWorkoutGenerationProvider(WorkoutGenerationProvider):
             response_format={
                 "type": "text",
                 "mime_type": "application/json",
-                "schema": WeeklyPlanSchema.model_json_schema(),
+                "schema": schema_cls.model_json_schema(),
             },
         )
 
         # Set the parsed plan from the model's JSON output; requests are always
         # non-streaming here, so the response is always a single Interaction
         output_text = cast(Interaction, interaction).output_text
-        plan = WeeklyPlanSchema.model_validate_json(output_text or "")
+        plan = schema_cls.model_validate_json(output_text or "")
 
         # Return the generated weekly workout, mapped to domain objects
         return Workout(

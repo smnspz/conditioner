@@ -4,7 +4,7 @@ from datetime import date, timedelta
 from typing import Annotated, Literal
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, create_model
 
 from conditioner.core.domain.readiness.readiness import ReadinessScore, ReadinessZone
 from conditioner.core.domain.workout.constraints import WorkoutConstraints
@@ -92,6 +92,48 @@ class WeeklyPlanSchema(BaseModel):
     """Structured-output schema for a generated weekly plan."""
 
     sessions: list[SessionSchema]
+
+
+def build_weekly_plan_schema(constraints: WorkoutConstraints) -> type[WeeklyPlanSchema]:
+    """Build a per-request structured-output schema constraining each exercise's equipment
+    to what the user actually has available (plus bodyweight).
+
+    Equipment can't be a static field on StrengthExerciseSchema etc. — the allowed set is
+    per-user (constraints.equipment), not known until request time — so the exercise/session/
+    plan schema classes are rebuilt per call via create_model, subclassing the static base
+    classes so isinstance checks in _to_exercise still work on the dynamic instances.
+    """
+
+    # Set allowed equipment values, deduped, bodyweight always allowed
+    allowed = tuple(dict.fromkeys([*constraints.equipment, "bodyweight"]))
+
+    dyn_strength = create_model(
+        "StrengthExerciseSchema",
+        __base__=StrengthExerciseSchema,
+        equipment=(Literal[allowed], ...),
+    )
+    dyn_cardio = create_model(
+        "CardioExerciseSchema",
+        __base__=CardioExerciseSchema,
+        equipment=(Literal[allowed], ...),
+    )
+    dyn_mobility = create_model(
+        "MobilityExerciseSchema",
+        __base__=MobilityExerciseSchema,
+        equipment=(Literal[allowed], ...),
+    )
+    dyn_exercise = Annotated[
+        dyn_strength | dyn_cardio | dyn_mobility,
+        Field(discriminator="modality"),
+    ]
+    dyn_session = create_model(
+        "SessionSchema", __base__=SessionSchema, exercises=(list[dyn_exercise], ...)
+    )
+
+    # Return the per-request weekly plan schema class
+    return create_model(
+        "WeeklyPlanSchema", __base__=WeeklyPlanSchema, sessions=(list[dyn_session], ...)
+    )
 
 
 def build_prompt(

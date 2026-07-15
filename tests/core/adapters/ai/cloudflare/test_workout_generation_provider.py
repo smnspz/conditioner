@@ -32,6 +32,7 @@ _PLAN = {
                     "sets": 5,
                     "reps": 5,
                     "target_load": 80.0,
+                    "equipment": "barbell",
                 }
             ],
         }
@@ -106,3 +107,9 @@ async def test_generate_weekly_plan_calls_correct_url_with_structured_output_sch
     assert kwargs["json"]["response_format"]["type"] == "json_schema"
     assert "sessions" in kwargs["json"]["response_format"]["json_schema"]["properties"]
     assert kwargs["json"]["max_tokens"] == 4096
+
+    # The equipment enum on each exercise variant is constrained to this request's
+    # constraints (barbell) plus bodyweight, not a fixed/static list
+    defs = kwargs["json"]["response_format"]["json_schema"]["$defs"]
+    equipment_enum = defs["StrengthExerciseSchema"]["properties"]["equipment"]["enum"]
+    assert set(equipment_enum) == {"barbell", "bodyweight"}

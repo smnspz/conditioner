@@ -6,8 +6,8 @@ from uuid import uuid4
 import httpx
 
 from conditioner.core.adapters.ai.workout_prompt import (
-    WeeklyPlanSchema,
     build_prompt,
+    build_weekly_plan_schema,
     sessions_from_plan,
 )
 from conditioner.core.domain.readiness.readiness import ReadinessScore
@@ -46,6 +46,9 @@ class CloudflareAIWorkoutGenerationProvider(WorkoutGenerationProvider):
     ) -> Workout:
         """Prompt the model for a weekly plan and map the structured response to a Workout."""
 
+        # Get the per-request schema, constraining exercise equipment to what's available
+        schema_cls = build_weekly_plan_schema(constraints)
+
         # Get the model's structured response for this week's constraints and readiness
         async with httpx.AsyncClient(timeout=150.0) as client:
             response = await client.post(
@@ -60,7 +63,7 @@ class CloudflareAIWorkoutGenerationProvider(WorkoutGenerationProvider):
                     ],
                     "response_format": {
                         "type": "json_schema",
-                        "json_schema": WeeklyPlanSchema.model_json_schema(),
+                        "json_schema": schema_cls.model_json_schema(),
                     },
                     "max_tokens": CLOUDFLARE_WORKOUT_MAX_TOKENS,
                 },
@@ -72,9 +75,9 @@ class CloudflareAIWorkoutGenerationProvider(WorkoutGenerationProvider):
         # an already-parsed object in others — handle both.
         result = response.json()["result"]["response"]
         plan = (
-            WeeklyPlanSchema.model_validate_json(result)
+            schema_cls.model_validate_json(result)
             if isinstance(result, str)
-            else WeeklyPlanSchema.model_validate(result)
+            else schema_cls.model_validate(result)
         )
 
         # Return the generated weekly workout, mapped to domain objects
