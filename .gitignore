@@ -11,3 +11,5 @@ __pycache__
 # Local database
 data/*.db
 
+# Vscode local settings
+.vscode
