@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, time, timedelta
+from typing import Any
 
 import httpx
 
@@ -11,6 +12,9 @@ from conditioner.shared.constants import GOOGLE_HEALTH_BASE_URL
 
 # Sleep stage types that count as time asleep
 _ASLEEP_TYPES = frozenset({"LIGHT", "DEEP", "REM", "ASLEEP"})
+
+# Raw JSON object from a Google Health API response
+JsonDict = dict[str, Any]
 
 
 class GoogleHealthClient(WearableDataProvider):
@@ -82,13 +86,13 @@ class GoogleHealthClient(WearableDataProvider):
         headers: dict[str, str],
         data_type: str,
         filter_str: str,
-    ) -> list[dict]:
+    ) -> list[JsonDict]:
         """Fetch all data points for a data type, following pagination."""
 
         # Initializations
         url = f"{GOOGLE_HEALTH_BASE_URL}/users/me/dataTypes/{data_type}/dataPoints"
         params: dict[str, str | int] = {"filter": filter_str, "pageSize": 1000}
-        points: list[dict] = []
+        points: list[JsonDict] = []
 
         while True:
             # Get page of data points
@@ -117,7 +121,7 @@ class GoogleHealthClient(WearableDataProvider):
         data_type: str,
         start: date,
         end_excl: date,
-    ) -> list[dict]:
+    ) -> list[JsonDict]:
         """Fetch one rolled-up data point per day for a given type and date range."""
 
         url = f"{GOOGLE_HEALTH_BASE_URL}/users/me/dataTypes/{data_type}/dataPoints:dailyRollUp"
@@ -143,10 +147,10 @@ def _build_metrics(
     user_id: str,
     start: date,
     end: date,
-    hrv_points: list[dict],
-    rhr_points: list[dict],
-    sleep_points: list[dict],
-    steps_points: list[dict],
+    hrv_points: list[JsonDict],
+    rhr_points: list[JsonDict],
+    sleep_points: list[JsonDict],
+    steps_points: list[JsonDict],
 ) -> list[WearableDailyMetrics]:
     """Map raw API data points to one WearableDailyMetrics per day in the range."""
 
@@ -170,7 +174,7 @@ def _build_metrics(
 
     # Index sleep sessions by wake-up date; prefer the longest session when multiple exist
     # Set sleep lookup keyed by wake date
-    sleep_by_date: dict[date, dict] = {}
+    sleep_by_date: dict[date, JsonDict] = {}
     for p in sleep_points:
         s = p.get("sleep", {})
         end_time_str = s.get("interval", {}).get("endTime")
@@ -209,10 +213,10 @@ def _build_metrics(
 def _build_day(
     user_id: str,
     day: date,
-    hrv_point: dict | None,
-    rhr_point: dict | None,
-    sleep_point: dict | None,
-    steps_point: dict | None,
+    hrv_point: JsonDict | None,
+    rhr_point: JsonDict | None,
+    sleep_point: JsonDict | None,
+    steps_point: JsonDict | None,
 ) -> WearableDailyMetrics:
     """Build a single day's WearableDailyMetrics from raw API data points."""
 
@@ -311,20 +315,20 @@ def _build_day(
     )
 
 
-def _date_from_struct(d: dict) -> date:
+def _date_from_struct(d: JsonDict) -> date:
     """Convert a Google Health Date object {year, month, day} to a Python date."""
 
     return date(d["year"], d["month"], d["day"])
 
 
-def _date_from_steps(point: dict) -> date:
+def _date_from_steps(point: JsonDict) -> date:
     """Extract the date from a steps dailyRollUp point via its startTime."""
 
     start_str = point["steps"].get("startTime", "")
     return _parse_ts(start_str).date() if start_str else date.min
 
 
-def _sleep_minutes(sleep_data: dict) -> int:
+def _sleep_minutes(sleep_data: JsonDict) -> int:
     """Return minutes asleep from a sleep session's data, used for session ranking."""
 
     return int(sleep_data.get("summary", {}).get("minutesAsleep") or 0)
