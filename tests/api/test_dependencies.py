@@ -12,10 +12,13 @@ from conditioner.shared.config import Settings, WorkoutGenerationEngine
 
 
 def _settings(**overrides: object) -> Settings:
+    # _env_file=None skips loading the developer's real .env, so these tests aren't
+    # affected by whatever engine/credentials happen to be set there.
     defaults: dict[str, object] = {
         "jwt_secret_key": "secret",
         "token_encryption_key": "key",
         "gemini_api_key": "gemini-key",
+        "_env_file": None,
     }
     defaults.update(overrides)
     return Settings(**defaults)  # type: ignore[arg-type]

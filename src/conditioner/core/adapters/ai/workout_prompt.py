@@ -50,7 +50,9 @@ def build_prompt(
         f"{constraints.available_minutes_by_weekday}.\n"
         f"Current readiness: {readiness.score}/100 ({readiness.zone.value}).\n"
         "Only schedule sessions on weekdays with available minutes, and keep each "
-        "session within its day's time budget."
+        "session within its day's time budget.\n"
+        "For strength exercises, always prescribe sets and reps (not duration_minutes). "
+        "For cardio and mobility exercises, prescribe duration_minutes instead of sets/reps."
     )
 
 
