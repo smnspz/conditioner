@@ -93,10 +93,6 @@ async def test_uses_perceived_fitness_when_no_readiness_score() -> None:
 
     assert workout == _WORKOUT
 
-    # Verify AI was called with a synthesized readiness score: 7 * 10 = 70 (GOOD zone)
+    # Verify AI was called with readiness=None; the prompt builder handles initial fitness
     call_args = provider.generate_weekly_plan.call_args
-    synthesized_readiness = call_args.args[3]
-    assert synthesized_readiness.score == 70
-    assert synthesized_readiness.zone == ReadinessZone.GOOD
-    assert synthesized_readiness.user_id == _USER_ID
-    assert synthesized_readiness.date == _WEEK_START
+    assert call_args.args[3] is None

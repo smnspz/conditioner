@@ -37,7 +37,7 @@ class GeminiWorkoutGenerationProvider(WorkoutGenerationProvider):
         user_id: str,
         week_start: date,
         constraints: WorkoutConstraints,
-        readiness: ReadinessScore,
+        readiness: ReadinessScore | None,
     ) -> Workout:
         """Prompt Gemini for a weekly plan and map the structured response to a Workout."""
 

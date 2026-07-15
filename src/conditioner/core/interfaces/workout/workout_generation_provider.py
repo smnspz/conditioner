@@ -17,6 +17,11 @@ class WorkoutGenerationProvider(ABC):
         user_id: str,
         week_start: date,
         constraints: WorkoutConstraints,
-        readiness: ReadinessScore,
+        readiness: ReadinessScore | None,
     ) -> Workout:
-        """Generate a weekly workout plan tailored to the user's constraints and readiness."""
+        """Generate a weekly workout plan tailored to the user's constraints and readiness.
+
+        When readiness is None (first-ever generation), the provider falls back to
+        constraints.initial_perceived_fitness to determine starting difficulty and
+        session structure.
+        """

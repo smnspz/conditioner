@@ -31,6 +31,36 @@ _ZONE_GUIDANCE: dict[ReadinessZone, str] = {
     ),
 }
 
+
+def _initial_fitness_guidance(fitness: int) -> str:
+    """Return structural and intensity guidance for the first week based on fitness level.
+
+    Low (1–3): rest day mid-week + weekend off, minimal intensity.
+    Moderate (4–7): one lighter mid-week session, moderate starting load.
+    High (8–10): full schedule utilisation, substantial starting intensity.
+    """
+
+    if fitness <= 3:
+        return (
+            f"This is the user's first week. Initial perceived fitness: {fitness}/10 (low). "
+            "Structure the week with a mandatory rest day on Wednesday (or the nearest "
+            "available mid-week day) and no sessions on Saturday or Sunday — even if those "
+            "days have available minutes. Keep intensity low, exercises simple and technique-"
+            "focused, sets and reps minimal."
+        )
+    if fitness <= 7:
+        return (
+            f"This is the user's first week. Initial perceived fitness: {fitness}/10 (moderate). "
+            "Include one lighter, recovery-focused session mid-week. Weekend sessions are "
+            "optional — only schedule them if the user has meaningful time available. Use "
+            "moderate starting intensity with manageable loads and a balanced exercise mix."
+        )
+    return (
+        f"This is the user's first week. Initial perceived fitness: {fitness}/10 (high). "
+        "Utilise the full weekly schedule as available. Start with substantial intensity, "
+        "varied exercise selection, and challenging but achievable loads."
+    )
+
 # Structured-output schema shared by all WorkoutGenerationProvider adapters; exercise
 # is a discriminated union on modality.
 
@@ -126,19 +156,34 @@ def build_weekly_plan_schema(constraints: WorkoutConstraints) -> type[WeeklyPlan
 
 
 def build_prompt(
-    week_start: date, constraints: WorkoutConstraints, readiness: ReadinessScore
+    week_start: date,
+    constraints: WorkoutConstraints,
+    readiness: ReadinessScore | None,
 ) -> str:
-    """Build the text prompt describing this week's constraints and readiness."""
+    """Build the text prompt describing this week's constraints and fitness state.
+
+    When readiness is None (first-ever generation), uses constraints.initial_perceived_fitness
+    to produce structural guidance (rest day placement, starting difficulty). When readiness
+    is provided, uses the computed zone to guide volume and intensity.
+    """
 
     equipment = ", ".join(constraints.equipment) or "none (bodyweight only)"
+
+    if readiness is None:
+        fitness_note = _initial_fitness_guidance(constraints.initial_perceived_fitness or 5)
+    else:
+        fitness_note = (
+            f"Current readiness: {readiness.score}/100 ({readiness.zone.value}). "
+            f"{_ZONE_GUIDANCE[readiness.zone]}"
+        )
+
     return (
         f"Generate a weekly conditioning plan starting {week_start.isoformat()}.\n"
         f"Goal: {constraints.goal.value}.\n"
         f"Available equipment: {equipment}.\n"
         f"Available minutes per weekday (0=Monday..6=Sunday): "
         f"{constraints.available_minutes_by_weekday}.\n"
-        f"Current readiness: {readiness.score}/100 ({readiness.zone.value}). "
-        f"{_ZONE_GUIDANCE[readiness.zone]}\n"
+        f"{fitness_note}\n"
         "Only schedule sessions on weekdays with available minutes, and keep each "
         "session within its day's time budget.\n"
         f"Only use the listed equipment ({equipment}) and bodyweight exercises — never "
