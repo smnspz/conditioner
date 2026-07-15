@@ -6,9 +6,34 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
-from conditioner.core.domain.readiness.readiness import ReadinessScore
+from conditioner.core.domain.readiness.readiness import ReadinessScore, ReadinessZone
 from conditioner.core.domain.workout.constraints import WorkoutConstraints
 from conditioner.core.domain.workout.workout import Exercise, ExerciseModality, Session
+
+# Operational-zone recommendations, per CLAUDE.md's readiness zone table. The model was
+# not reliably inferring appropriate volume/intensity from a bare "62/100 (moderate)" —
+# GOOD and MODERATE produced identical plans, LIGHT got more volume than PEAK, and REST
+# still included plyometric/explosive movements. Spelling out what each zone requires
+# fixed this in testing.
+_ZONE_GUIDANCE: dict[ReadinessZone, str] = {
+    ReadinessZone.PEAK: (
+        "Readiness is peak: full volume and intensity, hard sessions are appropriate."
+    ),
+    ReadinessZone.GOOD: "Readiness is good: normal training volume and intensity.",
+    ReadinessZone.MODERATE: (
+        "Readiness is moderate: reduce volume and intensity below normal — fewer "
+        "exercises and/or sets than a full session, avoid maximal effort."
+    ),
+    ReadinessZone.LIGHT: (
+        "Readiness is light: light work or active recovery only — fewer exercises than "
+        "a normal session, low intensity, no plyometric/explosive/high-impact movements."
+    ),
+    ReadinessZone.REST: (
+        "Readiness is rest: complete rest or gentle mobility only. Do not prescribe any "
+        "strength or cardio exercises — only slow mobility/stretching work, or an empty "
+        "session if that's more appropriate."
+    ),
+}
 
 # Prompt/structured-output shape shared by every WorkoutGenerationProvider adapter, so
 # each adapter only owns the mechanics of calling its own AI API.
@@ -81,7 +106,8 @@ def build_prompt(
         f"Available equipment: {equipment}.\n"
         f"Available minutes per weekday (0=Monday..6=Sunday): "
         f"{constraints.available_minutes_by_weekday}.\n"
-        f"Current readiness: {readiness.score}/100 ({readiness.zone.value}).\n"
+        f"Current readiness: {readiness.score}/100 ({readiness.zone.value}). "
+        f"{_ZONE_GUIDANCE[readiness.zone]}\n"
         "Only schedule sessions on weekdays with available minutes, and keep each "
         "session within its day's time budget.\n"
         f"Only use the listed equipment ({equipment}) and bodyweight exercises — never "
