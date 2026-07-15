@@ -20,11 +20,11 @@
 ## Task list
 
 ### 0. Project bootstrap
-- [ ] Fill in `pyproject.toml` deps: fastapi, uvicorn, httpx, yoyo-migrations, pydantic, sqlite/aiosqlite, python-jose or similar for Bearer tokens, pytest.
-- [ ] Scaffold `core/` (with `adapters/`, `services/`, `interfaces/`, `domain/` nested inside), `shared/`, `api/` under `src/conditioner`.
-- [ ] Set up `migrations/` with yoyo config.
-- [ ] Reconcile `client_secret.json` vs CLAUDE.md's `client_secrets.json` naming.
-- [ ] Write initial README (setup, run, test commands).
+- [x] Fill in `pyproject.toml` deps: fastapi, uvicorn, httpx, yoyo-migrations, pydantic, sqlite/aiosqlite, python-jose or similar for Bearer tokens, pytest.
+- [x] Scaffold `core/` (with `adapters/`, `services/`, `interfaces/`, `domain/` nested inside), `shared/`, `api/` under `src/conditioner`.
+- [x] Set up `migrations/` with yoyo config.
+- [x] Reconcile `client_secret.json` vs CLAUDE.md's `client_secrets.json` naming.
+- [x] Write initial README (setup, run, test commands).
 
 ### 1. Domain models
 - [x] `core/domain`: User, GoogleCredentials, WearableDailyMetrics, QuestionnaireResponse, ReadinessScore, Workout/Session/Exercise.
@@ -39,16 +39,16 @@
 - [x] Issue/verify our own Bearer tokens; auth dependency for FastAPI routes.
 
 ### 4. Wearable ingestion port + Google Health adapter
-- [ ] `core/interfaces`: `WearableDataProvider` port (fetch HRV, RHR, sleep, steps, etc. for a date range).
-- [ ] `core/adapters/wearables/google_health`: httpx client hitting Google Health API endpoints, mapped to domain models.
+- [x] `core/interfaces`: `WearableDataProvider` port (fetch HRV, RHR, sleep, steps, etc. for a date range).
+- [x] `core/adapters/wearables/google_health`: httpx client hitting Google Health API endpoints, mapped to domain models.
 
 ### 5. Questionnaire
-- [ ] API endpoint + core use case to submit/store daily questionnaire responses.
+- [x] API endpoint + core use case to submit/store daily questionnaire responses.
 
 ### 6. Readiness score service
-- [ ] `core/services`: normalization functions per metric (HRV, RHR, sleep composite, subjective wellbeing).
-- [ ] `core`: aggregation use case implementing the weighted formula + load penalties (consecutive days, ACWR) + zone mapping.
-- [ ] Baseline computation (rolling 7–14 day averages) as a supporting service.
+- [x] `core/services`: normalization functions per metric (HRV, RHR, sleep composite, subjective wellbeing).
+- [x] `core`: aggregation use case implementing the weighted formula + load penalties (consecutive days, ACWR) + zone mapping.
+- [x] Baseline computation (rolling 7–14 day averages) as a supporting service.
 
 ### 7. Workout generation
 - [ ] `core`: weekly plan generator with progressive load.
