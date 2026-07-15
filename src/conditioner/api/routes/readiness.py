@@ -3,7 +3,6 @@ from datetime import timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
 
 from conditioner.api.dependencies import (
     get_current_user_id,
@@ -11,6 +10,7 @@ from conditioner.api.dependencies import (
     get_questionnaire_repository,
     get_readiness_repository,
 )
+from conditioner.api.dto.readiness import ReadinessScoreOut
 from conditioner.core.interfaces.questionnaire.questionnaire_repository import (
     QuestionnaireRepository,
 )
@@ -25,14 +25,6 @@ from conditioner.core.services.readiness.baseline import (
 from conditioner.core.services.readiness.readiness import compute_readiness
 
 router = APIRouter(prefix="/readiness", tags=["readiness"])
-
-
-class ReadinessScoreOut(BaseModel):
-    """Serialized readiness score returned to the client."""
-
-    date: Date
-    score: int
-    zone: str
 
 
 @router.get("/{day}", response_model=ReadinessScoreOut)

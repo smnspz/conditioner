@@ -1,41 +1,18 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
 
 from conditioner.api.dependencies import (
     get_constraints_repository,
     get_current_user_id,
     get_equipment_repository,
 )
-from conditioner.core.domain.workout.constraints import TrainingGoal, WorkoutConstraints
+from conditioner.api.dto.constraints import WorkoutConstraintsOut, WorkoutConstraintsRequest
+from conditioner.core.domain.workout.constraints import WorkoutConstraints
 from conditioner.core.interfaces.workout.constraints_repository import ConstraintsRepository
 from conditioner.core.interfaces.workout.equipment_repository import EquipmentRepository
 
 router = APIRouter(prefix="/constraints", tags=["constraints"])
-
-
-class WorkoutConstraintsRequest(BaseModel):
-    """Workout constraints submission.
-
-    Attributes:
-        equipment: The equipment the user has available to train with.
-        goal: The user's training objective.
-        available_minutes_by_weekday: Minutes available to train on each weekday,
-            keyed 0 (Monday) through 6 (Sunday). Missing keys mean no session that day.
-    """
-
-    equipment: list[str]
-    goal: TrainingGoal
-    available_minutes_by_weekday: dict[Annotated[int, Field(ge=0, le=6)], int] = {}
-
-
-class WorkoutConstraintsOut(BaseModel):
-    """Serialized workout constraints returned to the client."""
-
-    equipment: list[str]
-    goal: TrainingGoal
-    available_minutes_by_weekday: dict[int, int]
 
 
 @router.put("", response_model=WorkoutConstraintsOut)

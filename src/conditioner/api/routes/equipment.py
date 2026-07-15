@@ -1,19 +1,12 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
 
 from conditioner.api.dependencies import get_equipment_repository
+from conditioner.api.dto.equipment import EquipmentOut
 from conditioner.core.interfaces.workout.equipment_repository import EquipmentRepository
 
 router = APIRouter(prefix="/equipment", tags=["equipment"])
-
-
-class EquipmentOut(BaseModel):
-    """Serialized equipment catalog entry returned to the client."""
-
-    id: str
-    name: str
 
 
 @router.get("", response_model=list[EquipmentOut])

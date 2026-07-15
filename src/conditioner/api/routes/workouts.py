@@ -2,7 +2,6 @@ from datetime import date as Date
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
 
 from conditioner.api.dependencies import (
     get_constraints_repository,
@@ -11,6 +10,7 @@ from conditioner.api.dependencies import (
     get_workout_generation_provider,
     get_workout_repository,
 )
+from conditioner.api.dto.workouts import ExerciseOut, SessionOut, WorkoutOut
 from conditioner.core.domain.workout.workout import Workout
 from conditioner.core.interfaces.readiness.readiness_repository import ReadinessRepository
 from conditioner.core.interfaces.workout.constraints_repository import ConstraintsRepository
@@ -26,35 +26,6 @@ from conditioner.core.services.workout.generate_weekly_plan import (
 from conditioner.core.services.workout.regenerate_week import regenerate_week
 
 router = APIRouter(prefix="/workouts", tags=["workouts"])
-
-
-class ExerciseOut(BaseModel):
-    """Serialized exercise returned to the client."""
-
-    id: str
-    name: str
-    modality: str
-    sets: int | None
-    reps: int | None
-    duration_minutes: float | None
-    target_load: float | None
-
-
-class SessionOut(BaseModel):
-    """Serialized session returned to the client."""
-
-    id: str
-    date: Date
-    exercises: list[ExerciseOut]
-    completed: bool
-
-
-class WorkoutOut(BaseModel):
-    """Serialized weekly workout plan returned to the client."""
-
-    id: str
-    week_start: Date
-    sessions: list[SessionOut]
 
 
 def _to_out(workout: Workout) -> WorkoutOut:

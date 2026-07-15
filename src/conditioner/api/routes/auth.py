@@ -6,7 +6,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import HTMLResponse, RedirectResponse
-from pydantic import BaseModel
 
 from conditioner.api.dependencies import (
     get_access_token_service,
@@ -23,16 +22,9 @@ from conditioner.core.interfaces.auth.user_repository import UserRepository
 from conditioner.core.services.auth.access_tokens import AccessTokenService
 from conditioner.core.services.auth.oauth_state import InvalidOAuthState, OAuthStateService
 from conditioner.shared.config import Settings, get_settings
-from conditioner.shared.constants import ACCESS_TOKEN_COOKIE_NAME, BEARER_TOKEN_SCHEME
+from conditioner.shared.constants import ACCESS_TOKEN_COOKIE_NAME
 
 router = APIRouter(prefix="/auth/google", tags=["auth"])
-
-
-class TokenResponse(BaseModel):
-    """Bearer token issued after successful OAuth."""
-
-    access_token: str
-    token_type: str = BEARER_TOKEN_SCHEME.lower()
 
 
 @router.get("/login")
