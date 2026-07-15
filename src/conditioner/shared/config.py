@@ -1,8 +1,16 @@
 from __future__ import annotations
 
+from enum import StrEnum
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class WorkoutGenerationEngine(StrEnum):
+    """Which WorkoutGenerationProvider adapter is active."""
+
+    GEMINI = "gemini"
+    CLOUDFLARE = "cloudflare"
 
 
 class Settings(BaseSettings):
@@ -16,6 +24,10 @@ class Settings(BaseSettings):
         token_encryption_key: Fernet key used to encrypt stored Google OAuth tokens at rest.
         dev_mode: When true, allows the access-token cookie over plain HTTP (no Secure flag).
         gemini_api_key: API key for the Gemini API, used to generate workout plans.
+        workout_generation_engine: Which WorkoutGenerationProvider adapter is active.
+        cloudflare_account_id: Cloudflare account id, required if the Cloudflare engine is active.
+        cloudflare_api_token: Cloudflare API token (Workers AI permission), required if the
+            Cloudflare engine is active.
     """
 
     database_path: str = "data/conditioner.db"
@@ -25,6 +37,9 @@ class Settings(BaseSettings):
     token_encryption_key: str
     dev_mode: bool = False
     gemini_api_key: str
+    workout_generation_engine: WorkoutGenerationEngine = WorkoutGenerationEngine.GEMINI
+    cloudflare_account_id: str | None = None
+    cloudflare_api_token: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env", env_prefix="CONDITIONER_")
 

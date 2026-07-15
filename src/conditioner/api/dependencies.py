@@ -4,6 +4,9 @@ from typing import Annotated
 
 from fastapi import Cookie, Depends, HTTPException, status
 
+from conditioner.core.adapters.ai.cloudflare.workout_generation_provider import (
+    CloudflareAIWorkoutGenerationProvider,
+)
 from conditioner.core.adapters.ai.gemini.workout_generation_provider import (
     GeminiWorkoutGenerationProvider,
 )
@@ -48,7 +51,7 @@ from conditioner.core.services.auth.access_tokens import AccessTokenService, Inv
 from conditioner.core.services.auth.jwt_tokens import JwtSigner
 from conditioner.core.services.auth.oauth_state import OAuthStateService
 from conditioner.core.services.auth.token_cipher import TokenCipher
-from conditioner.shared.config import Settings, get_settings
+from conditioner.shared.config import Settings, WorkoutGenerationEngine, get_settings
 from conditioner.shared.constants import ACCESS_TOKEN_COOKIE_NAME
 
 
@@ -99,9 +102,23 @@ def get_equipment_repository(
 def get_workout_generation_provider(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> WorkoutGenerationProvider:
-    """Resolve the Gemini-backed workout generation provider."""
+    """Resolve the active workout generation provider, per workout_generation_engine."""
 
-    # Return workout generation provider
+    if settings.workout_generation_engine == WorkoutGenerationEngine.CLOUDFLARE:
+        if not settings.cloudflare_account_id or not settings.cloudflare_api_token:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=(
+                    "CONDITIONER_CLOUDFLARE_ACCOUNT_ID and CONDITIONER_CLOUDFLARE_API_TOKEN "
+                    "must be set when workout_generation_engine is 'cloudflare'"
+                ),
+            )
+        # Return Cloudflare-backed workout generation provider
+        return CloudflareAIWorkoutGenerationProvider(
+            account_id=settings.cloudflare_account_id, api_token=settings.cloudflare_api_token
+        )
+
+    # Return Gemini-backed workout generation provider
     return GeminiWorkoutGenerationProvider(settings.gemini_api_key)
 
 
