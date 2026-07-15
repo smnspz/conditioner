@@ -64,13 +64,13 @@
 
 #### 7b. Generation logic
 
-- [ ] `core`: weekly plan generator with progressive load, prompting the AI port with constraints + readiness.
+- [x] `core`: weekly plan generator, prompting the AI port with constraints + readiness; refuses to generate (`PrerequisitesMissingError`) if either is missing. (No progressive load yet — prior-week history isn't passed to the AI port.)
 - [ ] `core`: daily adjustment use case that modifies remaining sessions based on readiness zone.
 - [ ] `core`: regeneration use case triggered when constraints (e.g. available time) change mid-week, leaving already-completed sessions untouched.
 
 ### 8. API layer
 - [x] FastAPI routers: `/auth/google/*`, `/questionnaire`, `/readiness`.
-- [ ] `/workouts` router — blocked on task 7b (workout generation logic not built yet).
+- [x] `/workouts` router — `POST /workouts/{week_start}/generate` (422 if prerequisites missing), `GET /workouts/{week_start}`. Daily adjustment/regeneration endpoints still blocked on the rest of 7b.
 - [x] Constraints endpoint(s) (set/get `WorkoutConstraints`) — see task 7a.
 
 ### 9. GDPR compliance

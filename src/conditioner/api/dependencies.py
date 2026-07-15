@@ -24,6 +24,9 @@ from conditioner.core.adapters.persistence.sqlite.readiness_repository import (
     SqliteReadinessRepository,
 )
 from conditioner.core.adapters.persistence.sqlite.user_repository import SqliteUserRepository
+from conditioner.core.adapters.persistence.sqlite.workout_repository import (
+    SqliteWorkoutRepository,
+)
 from conditioner.core.interfaces.auth.credentials_repository import CredentialsRepository
 from conditioner.core.interfaces.auth.google_oauth_provider import GoogleOAuthProvider
 from conditioner.core.interfaces.auth.user_repository import UserRepository
@@ -36,6 +39,7 @@ from conditioner.core.interfaces.workout.constraints_repository import Constrain
 from conditioner.core.interfaces.workout.workout_generation_provider import (
     WorkoutGenerationProvider,
 )
+from conditioner.core.interfaces.workout.workout_repository import WorkoutRepository
 from conditioner.core.services.auth.access_tokens import AccessTokenService, InvalidAccessToken
 from conditioner.core.services.auth.jwt_tokens import JwtSigner
 from conditioner.core.services.auth.oauth_state import OAuthStateService
@@ -86,6 +90,15 @@ def get_workout_generation_provider(
 
     # Return workout generation provider
     return GeminiWorkoutGenerationProvider(settings.gemini_api_key)
+
+
+def get_workout_repository(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> WorkoutRepository:
+    """Resolve the SQLite-backed workout repository."""
+
+    # Return workout repository
+    return SqliteWorkoutRepository(settings.database_path)
 
 
 def get_google_oauth_provider(
