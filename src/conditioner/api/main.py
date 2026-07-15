@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 
 from conditioner.api.routes.auth import router as auth_router
 from conditioner.api.routes.constraints import router as constraints_router
@@ -22,3 +23,11 @@ def health_check() -> dict[str, str]:
 
     # Return health status
     return {"status": "ok"}
+
+
+@app.get("/")
+def root() -> RedirectResponse:
+    """Redirect to the health check."""
+
+    # Return redirect to health check
+    return RedirectResponse(url="/health")
