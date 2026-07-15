@@ -6,7 +6,7 @@ import httpx
 import pytest
 
 from conditioner.core.adapters.google.oauth_client import GoogleOAuthClient
-from conditioner.shared.constants import GOOGLE_FITNESS_SCOPES, GOOGLE_IDENTITY_SCOPES
+from conditioner.shared.constants import GOOGLE_HEALTH_SCOPES, GOOGLE_IDENTITY_SCOPES
 
 
 @pytest.fixture
@@ -58,7 +58,7 @@ def test_get_authorization_url_includes_scopes_and_state(client_secrets_path: st
     assert parsed["state"] == ["state-123"]
     assert parsed["client_id"] == ["test-client-id"]
     granted_scopes = set(parsed["scope"][0].split())
-    assert granted_scopes == set(GOOGLE_IDENTITY_SCOPES + GOOGLE_FITNESS_SCOPES)
+    assert granted_scopes == set(GOOGLE_IDENTITY_SCOPES + GOOGLE_HEALTH_SCOPES)
 
 
 async def test_exchange_code_returns_tokens(client_secrets_path: str) -> None:

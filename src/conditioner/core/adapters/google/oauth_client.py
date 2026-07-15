@@ -8,7 +8,7 @@ import httpx
 from conditioner.core.domain.auth.google_token import GoogleTokenResponse
 from conditioner.core.interfaces.auth.google_oauth_provider import GoogleOAuthProvider
 from conditioner.shared.constants import (
-    GOOGLE_FITNESS_SCOPES,
+    GOOGLE_HEALTH_SCOPES,
     GOOGLE_IDENTITY_SCOPES,
     GOOGLE_USERINFO_URL,
 )
@@ -43,7 +43,7 @@ class GoogleOAuthClient(GoogleOAuthProvider):
             "client_id": self._client_id,
             "redirect_uri": self._redirect_uri,
             "response_type": "code",
-            "scope": " ".join(GOOGLE_IDENTITY_SCOPES + GOOGLE_FITNESS_SCOPES),
+            "scope": " ".join(GOOGLE_IDENTITY_SCOPES + GOOGLE_HEALTH_SCOPES),
             "access_type": "offline",
             "prompt": "consent",
             "state": state,
