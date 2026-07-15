@@ -69,15 +69,23 @@ async def run(token: str, base_url: str) -> None:
     print(f"Seeded 15 days of wearable metrics for user {user_id}")
 
     async with httpx.AsyncClient(
-        base_url=base_url, cookies={ACCESS_TOKEN_COOKIE_NAME: token}, timeout=30.0
+        base_url=base_url, cookies={ACCESS_TOKEN_COOKIE_NAME: token}, timeout=180.0
     ) as client:
         _check(
             await client.put(
                 "/constraints",
                 json={
-                    "equipment": ["dumbbells", "kettlebell"],
+                    "equipment": ["resistance_bands"],
                     "goal": "mma_conditioning",
-                    "available_minutes_by_weekday": {"0": 45, "1": 45, "2": 45, "3": 45, "4": 45},
+                    "available_minutes_by_weekday": {
+                        "0": 60,
+                        "1": 60,
+                        "2": 60,
+                        "3": 60,
+                        "4": 60,
+                        "5": 60,
+                        "6": 60,
+                    },
                 },
             ),
             "PUT /constraints",
@@ -87,10 +95,10 @@ async def run(token: str, base_url: str) -> None:
                 "/questionnaire",
                 json={
                     "date": str(readiness_day),
-                    "fatigue": 2,
-                    "soreness": 2,
-                    "stress": 2,
-                    "sleep_quality": 8,
+                    "fatigue": 3,
+                    "soreness": 5,
+                    "stress": 1,
+                    "sleep_quality": 7,
                     "is_sick": False,
                 },
             ),
