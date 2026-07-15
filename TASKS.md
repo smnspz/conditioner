@@ -55,7 +55,8 @@
 - [ ] `core`: daily adjustment use case that modifies remaining sessions based on readiness zone.
 
 ### 8. API layer
-- [ ] FastAPI routers: `/auth/google/*`, `/questionnaire`, `/readiness`, `/workouts`.
+- [x] FastAPI routers: `/auth/google/*`, `/questionnaire`, `/readiness`.
+- [ ] `/workouts` router — blocked on task 7 (workout generation not built yet).
 
 ### 9. GDPR compliance
 - [ ] Consent capture at signup/OAuth.

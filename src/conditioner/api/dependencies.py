@@ -8,13 +8,21 @@ from conditioner.core.adapters.google.oauth_client import GoogleOAuthClient
 from conditioner.core.adapters.persistence.sqlite.credentials_repository import (
     SqliteCredentialsRepository,
 )
+from conditioner.core.adapters.persistence.sqlite.metrics_repository import (
+    SqliteMetricsRepository,
+)
 from conditioner.core.adapters.persistence.sqlite.questionnaire_repository import (
     SqliteQuestionnaireRepository,
+)
+from conditioner.core.adapters.persistence.sqlite.readiness_repository import (
+    SqliteReadinessRepository,
 )
 from conditioner.core.adapters.persistence.sqlite.user_repository import SqliteUserRepository
 from conditioner.core.interfaces.credentials_repository import CredentialsRepository
 from conditioner.core.interfaces.google_oauth_provider import GoogleOAuthProvider
+from conditioner.core.interfaces.metrics_repository import MetricsRepository
 from conditioner.core.interfaces.questionnaire_repository import QuestionnaireRepository
+from conditioner.core.interfaces.readiness_repository import ReadinessRepository
 from conditioner.core.interfaces.user_repository import UserRepository
 from conditioner.core.services.access_tokens import AccessTokenService, InvalidAccessToken
 from conditioner.core.services.jwt_tokens import JwtSigner
@@ -94,6 +102,24 @@ def get_questionnaire_repository(
 
     # Return questionnaire repository
     return SqliteQuestionnaireRepository(settings.database_path)
+
+
+def get_metrics_repository(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> MetricsRepository:
+    """Resolve the SQLite-backed wearable metrics repository."""
+
+    # Return metrics repository
+    return SqliteMetricsRepository(settings.database_path)
+
+
+def get_readiness_repository(
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> ReadinessRepository:
+    """Resolve the SQLite-backed readiness score repository."""
+
+    # Return readiness repository
+    return SqliteReadinessRepository(settings.database_path)
 
 
 async def get_current_user_id(
