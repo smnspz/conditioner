@@ -13,3 +13,6 @@ data/*.db
 
 # Vscode local settings
 .vscode
+
+# Cloudflare
+.wrangler

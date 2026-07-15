@@ -1,8 +1,9 @@
 """Walk the full app flow for an already-authenticated user: constraints, wearable
 metrics, questionnaire, readiness, then weekly workout generation.
 
-Wearable metrics are seeded directly via SqliteMetricsRepository; everything
-else goes through the real HTTP API.
+Wearable metrics are seeded directly via the configured persistence adapter
+(SQLite or D1, driven by CONDITIONER_PERSISTENCE_ENGINE); everything else goes
+through the real HTTP API.
 
 Usage:
     poetry run python scripts/e2e_flow.py <access_token> [base_url]
@@ -18,6 +19,8 @@ from datetime import date, timedelta
 
 import httpx
 
+from conditioner.core.adapters.persistence.d1.client import D1Client
+from conditioner.core.adapters.persistence.d1.metrics_repository import D1MetricsRepository
 from conditioner.core.adapters.persistence.sqlite.metrics_repository import (
     SqliteMetricsRepository,
 )
@@ -29,7 +32,19 @@ from conditioner.shared.constants import Constants
 
 
 async def _seed_wearable_history(user_id: str, today: date) -> None:
-    repo = SqliteMetricsRepository(get_settings().database_path)
+    settings = get_settings()
+
+    # Get metrics repository for the configured persistence engine
+    if settings.persistence_engine == "d1":
+        client = D1Client(
+            account_id=settings.cloudflare_account_id,
+            database_id=settings.cloudflare_d1_database_id,
+            api_token=settings.cloudflare_api_token,
+        )
+        repo = D1MetricsRepository(client)
+    else:
+        repo = SqliteMetricsRepository(settings.database_path)
+
     for offset in range(14, -1, -1):
         await repo.save(
             WearableDailyMetrics(

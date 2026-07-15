@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+
 if [[ "$1" == "prod" ]]; then
     npx wrangler d1 migrations apply conditioner --remote
 elif [[ "$1" == "local" ]]; then

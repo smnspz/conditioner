@@ -41,9 +41,10 @@ class D1Client:
         await self._post({"sql": sql, "params": list(params)})
 
     async def batch(self, statements: Sequence[tuple[str, Sequence[Any]]]) -> None:
-        """Run multiple statements as a single atomic transaction."""
+        """Run multiple statements sequentially."""
 
-        await self._post([{"sql": sql, "params": list(params)} for sql, params in statements])
+        for sql, params in statements:
+            await self.execute(sql, params)
 
     async def _post(self, body: JsonRow | list[JsonRow]) -> list[JsonRow]:
         """Post a query/batch payload and return D1's per-statement result list."""
