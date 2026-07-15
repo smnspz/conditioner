@@ -5,9 +5,9 @@ from typing import Any
 
 import httpx
 
-from conditioner.core.domain.credentials import GoogleCredentials
-from conditioner.core.domain.wearable_metrics import WearableDailyMetrics
-from conditioner.core.interfaces.wearable_provider import WearableDataProvider
+from conditioner.core.domain.auth.credentials import GoogleCredentials
+from conditioner.core.domain.wearables.wearable_metrics import WearableDailyMetrics
+from conditioner.core.interfaces.wearables.wearable_provider import WearableDataProvider
 from conditioner.shared.constants import GOOGLE_HEALTH_BASE_URL
 
 # Sleep stage types that count as time asleep

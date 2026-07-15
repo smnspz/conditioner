@@ -4,8 +4,8 @@ from conditioner.core.adapters.persistence.sqlite.readiness_repository import (
     SqliteReadinessRepository,
 )
 from conditioner.core.adapters.persistence.sqlite.user_repository import SqliteUserRepository
-from conditioner.core.domain.readiness import ReadinessScore, ReadinessZone
-from conditioner.core.domain.user import User
+from conditioner.core.domain.auth.user import User
+from conditioner.core.domain.readiness.readiness import ReadinessScore, ReadinessZone
 
 
 async def _seed_user(db_path: str, user_id: str) -> None:

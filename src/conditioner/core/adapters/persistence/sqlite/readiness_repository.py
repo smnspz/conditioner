@@ -5,8 +5,8 @@ from datetime import date
 import aiosqlite
 
 from conditioner.core.adapters.persistence.sqlite.connection import connect
-from conditioner.core.domain.readiness import ReadinessScore, ReadinessZone
-from conditioner.core.interfaces.readiness_repository import ReadinessRepository
+from conditioner.core.domain.readiness.readiness import ReadinessScore, ReadinessZone
+from conditioner.core.interfaces.readiness.readiness_repository import ReadinessRepository
 
 
 class SqliteReadinessRepository(ReadinessRepository):

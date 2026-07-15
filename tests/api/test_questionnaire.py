@@ -13,8 +13,8 @@ from conditioner.api.main import app
 from conditioner.core.adapters.persistence.sqlite.questionnaire_repository import (
     SqliteQuestionnaireRepository,
 )
-from conditioner.core.services.access_tokens import AccessTokenService
-from conditioner.core.services.jwt_tokens import JwtSigner
+from conditioner.core.services.auth.access_tokens import AccessTokenService
+from conditioner.core.services.auth.jwt_tokens import JwtSigner
 
 _JWT_SIGNER = JwtSigner("test-secret")
 _USER_ID = "user-123"

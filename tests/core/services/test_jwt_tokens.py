@@ -2,7 +2,7 @@ from datetime import timedelta
 
 import pytest
 
-from conditioner.core.services.jwt_tokens import JwtError, JwtSigner
+from conditioner.core.services.auth.jwt_tokens import JwtError, JwtSigner
 
 
 def test_sign_and_verify_round_trips_claims() -> None:

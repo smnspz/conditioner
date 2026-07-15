@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from conditioner.core.domain.credentials import GoogleCredentials
+from conditioner.core.domain.auth.credentials import GoogleCredentials
 
 
 class CredentialsRepository(ABC):

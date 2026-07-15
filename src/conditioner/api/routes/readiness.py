@@ -11,16 +11,18 @@ from conditioner.api.dependencies import (
     get_questionnaire_repository,
     get_readiness_repository,
 )
-from conditioner.core.interfaces.metrics_repository import MetricsRepository
-from conditioner.core.interfaces.questionnaire_repository import QuestionnaireRepository
-from conditioner.core.interfaces.readiness_repository import ReadinessRepository
-from conditioner.core.services.baseline import (
+from conditioner.core.interfaces.questionnaire.questionnaire_repository import (
+    QuestionnaireRepository,
+)
+from conditioner.core.interfaces.readiness.readiness_repository import ReadinessRepository
+from conditioner.core.interfaces.wearables.metrics_repository import MetricsRepository
+from conditioner.core.services.readiness.baseline import (
     CHRONIC_LOAD_WINDOW_DAYS,
     acute_chronic_load_ratio,
     compute_baseline,
     consecutive_training_days,
 )
-from conditioner.core.services.readiness import compute_readiness
+from conditioner.core.services.readiness.readiness import compute_readiness
 
 router = APIRouter(prefix="/readiness", tags=["readiness"])
 

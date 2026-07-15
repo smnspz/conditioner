@@ -1,15 +1,15 @@
 from datetime import date, time
 
-from conditioner.core.domain.questionnaire import QuestionnaireResponse
-from conditioner.core.domain.readiness import ReadinessZone
-from conditioner.core.domain.wearable_metrics import WearableDailyMetrics
-from conditioner.core.services.baseline import (
+from conditioner.core.domain.questionnaire.questionnaire import QuestionnaireResponse
+from conditioner.core.domain.readiness.readiness import ReadinessZone
+from conditioner.core.domain.wearables.wearable_metrics import WearableDailyMetrics
+from conditioner.core.services.readiness.baseline import (
     Baseline,
     acute_chronic_load_ratio,
     compute_baseline,
     consecutive_training_days,
 )
-from conditioner.core.services.readiness import (
+from conditioner.core.services.readiness.readiness import (
     compute_readiness,
     normalize_hrv,
     normalize_rhr,

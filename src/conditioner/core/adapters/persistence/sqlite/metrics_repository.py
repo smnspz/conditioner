@@ -5,8 +5,8 @@ from datetime import date, time
 import aiosqlite
 
 from conditioner.core.adapters.persistence.sqlite.connection import connect
-from conditioner.core.domain.wearable_metrics import WearableDailyMetrics
-from conditioner.core.interfaces.metrics_repository import MetricsRepository
+from conditioner.core.domain.wearables.wearable_metrics import WearableDailyMetrics
+from conditioner.core.interfaces.wearables.metrics_repository import MetricsRepository
 
 
 class SqliteMetricsRepository(MetricsRepository):

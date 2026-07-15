@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from conditioner.core.domain.google_token import GoogleTokenResponse
+from conditioner.core.domain.auth.google_token import GoogleTokenResponse
 
 
 class GoogleOAuthProvider(ABC):

@@ -22,10 +22,10 @@ from conditioner.core.adapters.persistence.sqlite.questionnaire_repository impor
 from conditioner.core.adapters.persistence.sqlite.readiness_repository import (
     SqliteReadinessRepository,
 )
-from conditioner.core.domain.questionnaire import QuestionnaireResponse
-from conditioner.core.domain.wearable_metrics import WearableDailyMetrics
-from conditioner.core.services.access_tokens import AccessTokenService
-from conditioner.core.services.jwt_tokens import JwtSigner
+from conditioner.core.domain.questionnaire.questionnaire import QuestionnaireResponse
+from conditioner.core.domain.wearables.wearable_metrics import WearableDailyMetrics
+from conditioner.core.services.auth.access_tokens import AccessTokenService
+from conditioner.core.services.auth.jwt_tokens import JwtSigner
 
 _JWT_SIGNER = JwtSigner("test-secret")
 _USER_ID = "user-123"

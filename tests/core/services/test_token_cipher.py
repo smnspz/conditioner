@@ -1,7 +1,7 @@
 import pytest
 from cryptography.fernet import Fernet, InvalidToken
 
-from conditioner.core.services.token_cipher import TokenCipher
+from conditioner.core.services.auth.token_cipher import TokenCipher
 
 
 def test_encrypt_and_decrypt_round_trips() -> None:

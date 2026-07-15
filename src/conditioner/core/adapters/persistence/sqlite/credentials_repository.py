@@ -5,9 +5,9 @@ from datetime import datetime
 import aiosqlite
 
 from conditioner.core.adapters.persistence.sqlite.connection import connect
-from conditioner.core.domain.credentials import GoogleCredentials
-from conditioner.core.interfaces.credentials_repository import CredentialsRepository
-from conditioner.core.services.token_cipher import TokenCipher
+from conditioner.core.domain.auth.credentials import GoogleCredentials
+from conditioner.core.interfaces.auth.credentials_repository import CredentialsRepository
+from conditioner.core.services.auth.token_cipher import TokenCipher
 
 
 class SqliteCredentialsRepository(CredentialsRepository):

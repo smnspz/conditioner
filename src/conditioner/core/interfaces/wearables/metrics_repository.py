@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from datetime import date
 
-from conditioner.core.domain.wearable_metrics import WearableDailyMetrics
+from conditioner.core.domain.wearables.wearable_metrics import WearableDailyMetrics
 
 
 class MetricsRepository(ABC):

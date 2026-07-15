@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
 from conditioner.core.adapters.persistence.sqlite.user_repository import SqliteUserRepository
-from conditioner.core.domain.user import User
+from conditioner.core.domain.auth.user import User
 
 
 async def test_save_and_get_by_id_round_trips(db_path: str) -> None:

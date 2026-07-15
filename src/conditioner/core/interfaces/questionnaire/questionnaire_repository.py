@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from datetime import date
 
-from conditioner.core.domain.questionnaire import QuestionnaireResponse
+from conditioner.core.domain.questionnaire.questionnaire import QuestionnaireResponse
 
 
 class QuestionnaireRepository(ABC):

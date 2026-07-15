@@ -49,7 +49,7 @@ class Session:
 
     id: str
     date: date
-    exercises: list[Exercise] = field(default_factory=list)
+    exercises: list[Exercise] = field(default_factory=list[Exercise])
     completed: bool = False
 
 
@@ -67,4 +67,4 @@ class Workout:
     id: str
     user_id: str
     week_start: date
-    sessions: list[Session] = field(default_factory=list)
+    sessions: list[Session] = field(default_factory=list[Session])

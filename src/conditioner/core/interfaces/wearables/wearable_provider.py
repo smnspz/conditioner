@@ -3,8 +3,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from datetime import date
 
-from conditioner.core.domain.credentials import GoogleCredentials
-from conditioner.core.domain.wearable_metrics import WearableDailyMetrics
+from conditioner.core.domain.auth.credentials import GoogleCredentials
+from conditioner.core.domain.wearables.wearable_metrics import WearableDailyMetrics
 
 
 class WearableDataProvider(ABC):

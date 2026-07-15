@@ -4,8 +4,8 @@ from conditioner.core.adapters.persistence.sqlite.user_repository import SqliteU
 from conditioner.core.adapters.persistence.sqlite.workout_repository import (
     SqliteWorkoutRepository,
 )
-from conditioner.core.domain.user import User
-from conditioner.core.domain.workout import Exercise, ExerciseModality, Session, Workout
+from conditioner.core.domain.auth.user import User
+from conditioner.core.domain.workout.workout import Exercise, ExerciseModality, Session, Workout
 
 
 async def _seed_user(db_path: str, user_id: str) -> None:

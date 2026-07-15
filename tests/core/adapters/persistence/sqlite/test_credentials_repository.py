@@ -7,9 +7,9 @@ from conditioner.core.adapters.persistence.sqlite.credentials_repository import 
     SqliteCredentialsRepository,
 )
 from conditioner.core.adapters.persistence.sqlite.user_repository import SqliteUserRepository
-from conditioner.core.domain.credentials import GoogleCredentials
-from conditioner.core.domain.user import User
-from conditioner.core.services.token_cipher import TokenCipher
+from conditioner.core.domain.auth.credentials import GoogleCredentials
+from conditioner.core.domain.auth.user import User
+from conditioner.core.services.auth.token_cipher import TokenCipher
 
 
 def _cipher() -> TokenCipher:

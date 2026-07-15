@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import timedelta
 
-from conditioner.core.services.jwt_tokens import JwtError, JwtSigner
+from conditioner.core.services.auth.jwt_tokens import JwtError, JwtSigner
 
 OAUTH_STATE_TTL = timedelta(minutes=5)
 

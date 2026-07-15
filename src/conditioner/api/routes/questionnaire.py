@@ -5,8 +5,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
 from conditioner.api.dependencies import get_current_user_id, get_questionnaire_repository
-from conditioner.core.domain.questionnaire import QuestionnaireResponse
-from conditioner.core.interfaces.questionnaire_repository import QuestionnaireRepository
+from conditioner.core.domain.questionnaire.questionnaire import QuestionnaireResponse
+from conditioner.core.interfaces.questionnaire.questionnaire_repository import (
+    QuestionnaireRepository,
+)
 
 router = APIRouter(prefix="/questionnaire", tags=["questionnaire"])
 

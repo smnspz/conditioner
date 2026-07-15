@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from datetime import date
 
-from conditioner.core.domain.readiness import ReadinessScore
+from conditioner.core.domain.readiness.readiness import ReadinessScore
 
 
 class ReadinessRepository(ABC):

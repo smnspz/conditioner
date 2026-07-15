@@ -1,8 +1,8 @@
 import pytest
 
-from conditioner.core.services.access_tokens import AccessTokenService, InvalidAccessToken
-from conditioner.core.services.jwt_tokens import JwtSigner
-from conditioner.core.services.oauth_state import OAuthStateService
+from conditioner.core.services.auth.access_tokens import AccessTokenService, InvalidAccessToken
+from conditioner.core.services.auth.jwt_tokens import JwtSigner
+from conditioner.core.services.auth.oauth_state import OAuthStateService
 
 
 def test_issue_and_verify_round_trips_user_id() -> None:

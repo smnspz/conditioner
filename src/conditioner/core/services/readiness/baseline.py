@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import time
 
-from conditioner.core.domain.wearable_metrics import WearableDailyMetrics
+from conditioner.core.domain.wearables.wearable_metrics import WearableDailyMetrics
 
 BASELINE_WINDOW_DAYS = 14
 ACUTE_LOAD_WINDOW_DAYS = 7

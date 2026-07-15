@@ -4,8 +4,8 @@ from conditioner.core.adapters.persistence.sqlite.questionnaire_repository impor
     SqliteQuestionnaireRepository,
 )
 from conditioner.core.adapters.persistence.sqlite.user_repository import SqliteUserRepository
-from conditioner.core.domain.questionnaire import QuestionnaireResponse
-from conditioner.core.domain.user import User
+from conditioner.core.domain.auth.user import User
+from conditioner.core.domain.questionnaire.questionnaire import QuestionnaireResponse
 
 
 async def _seed_user(db_path: str, user_id: str) -> None:

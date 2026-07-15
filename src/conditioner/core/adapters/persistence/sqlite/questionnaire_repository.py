@@ -5,8 +5,10 @@ from datetime import date
 import aiosqlite
 
 from conditioner.core.adapters.persistence.sqlite.connection import connect
-from conditioner.core.domain.questionnaire import QuestionnaireResponse
-from conditioner.core.interfaces.questionnaire_repository import QuestionnaireRepository
+from conditioner.core.domain.questionnaire.questionnaire import QuestionnaireResponse
+from conditioner.core.interfaces.questionnaire.questionnaire_repository import (
+    QuestionnaireRepository,
+)
 
 
 class SqliteQuestionnaireRepository(QuestionnaireRepository):

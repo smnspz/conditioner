@@ -4,8 +4,8 @@ from conditioner.core.adapters.persistence.sqlite.metrics_repository import (
     SqliteMetricsRepository,
 )
 from conditioner.core.adapters.persistence.sqlite.user_repository import SqliteUserRepository
-from conditioner.core.domain.user import User
-from conditioner.core.domain.wearable_metrics import WearableDailyMetrics
+from conditioner.core.domain.auth.user import User
+from conditioner.core.domain.wearables.wearable_metrics import WearableDailyMetrics
 
 
 async def _seed_user(db_path: str, user_id: str) -> None:

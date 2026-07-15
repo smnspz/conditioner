@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from datetime import date
 
-from conditioner.core.domain.workout import Workout
+from conditioner.core.domain.workout.workout import Workout
 
 
 class WorkoutRepository(ABC):

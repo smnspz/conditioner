@@ -5,8 +5,8 @@ from datetime import datetime
 import aiosqlite
 
 from conditioner.core.adapters.persistence.sqlite.connection import connect
-from conditioner.core.domain.user import User
-from conditioner.core.interfaces.user_repository import UserRepository
+from conditioner.core.domain.auth.user import User
+from conditioner.core.interfaces.auth.user_repository import UserRepository
 
 
 class SqliteUserRepository(UserRepository):

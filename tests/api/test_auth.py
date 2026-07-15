@@ -16,12 +16,12 @@ from conditioner.core.adapters.persistence.sqlite.credentials_repository import 
     SqliteCredentialsRepository,
 )
 from conditioner.core.adapters.persistence.sqlite.user_repository import SqliteUserRepository
-from conditioner.core.domain.google_token import GoogleTokenResponse
-from conditioner.core.interfaces.google_oauth_provider import GoogleOAuthProvider
-from conditioner.core.services.access_tokens import AccessTokenService
-from conditioner.core.services.jwt_tokens import JwtSigner
-from conditioner.core.services.oauth_state import OAuthStateService
-from conditioner.core.services.token_cipher import TokenCipher
+from conditioner.core.domain.auth.google_token import GoogleTokenResponse
+from conditioner.core.interfaces.auth.google_oauth_provider import GoogleOAuthProvider
+from conditioner.core.services.auth.access_tokens import AccessTokenService
+from conditioner.core.services.auth.jwt_tokens import JwtSigner
+from conditioner.core.services.auth.oauth_state import OAuthStateService
+from conditioner.core.services.auth.token_cipher import TokenCipher
 from conditioner.shared.constants import ACCESS_TOKEN_COOKIE_NAME
 
 _JWT_SIGNER = JwtSigner("test-secret")

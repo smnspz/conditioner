@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from conditioner.core.domain.user import User
+from conditioner.core.domain.auth.user import User
 
 
 class UserRepository(ABC):

@@ -15,13 +15,13 @@ from conditioner.api.dependencies import (
     get_oauth_state_service,
     get_user_repository,
 )
-from conditioner.core.domain.credentials import GoogleCredentials
-from conditioner.core.domain.user import User
-from conditioner.core.interfaces.credentials_repository import CredentialsRepository
-from conditioner.core.interfaces.google_oauth_provider import GoogleOAuthProvider
-from conditioner.core.interfaces.user_repository import UserRepository
-from conditioner.core.services.access_tokens import AccessTokenService
-from conditioner.core.services.oauth_state import InvalidOAuthState, OAuthStateService
+from conditioner.core.domain.auth.credentials import GoogleCredentials
+from conditioner.core.domain.auth.user import User
+from conditioner.core.interfaces.auth.credentials_repository import CredentialsRepository
+from conditioner.core.interfaces.auth.google_oauth_provider import GoogleOAuthProvider
+from conditioner.core.interfaces.auth.user_repository import UserRepository
+from conditioner.core.services.auth.access_tokens import AccessTokenService
+from conditioner.core.services.auth.oauth_state import InvalidOAuthState, OAuthStateService
 from conditioner.shared.config import Settings, get_settings
 from conditioner.shared.constants import ACCESS_TOKEN_COOKIE_NAME, BEARER_TOKEN_SCHEME
 

@@ -1,6 +1,6 @@
 import pytest
 
-from conditioner.core.domain.readiness import ReadinessZone
+from conditioner.core.domain.readiness.readiness import ReadinessZone
 
 
 @pytest.mark.parametrize(

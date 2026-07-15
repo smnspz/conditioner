@@ -5,8 +5,8 @@ from datetime import date
 import aiosqlite
 
 from conditioner.core.adapters.persistence.sqlite.connection import connect
-from conditioner.core.domain.workout import Exercise, ExerciseModality, Session, Workout
-from conditioner.core.interfaces.workout_repository import WorkoutRepository
+from conditioner.core.domain.workout.workout import Exercise, ExerciseModality, Session, Workout
+from conditioner.core.interfaces.workout.workout_repository import WorkoutRepository
 
 
 class SqliteWorkoutRepository(WorkoutRepository):

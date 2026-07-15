@@ -5,8 +5,8 @@ from urllib.parse import urlencode
 
 import httpx
 
-from conditioner.core.domain.google_token import GoogleTokenResponse
-from conditioner.core.interfaces.google_oauth_provider import GoogleOAuthProvider
+from conditioner.core.domain.auth.google_token import GoogleTokenResponse
+from conditioner.core.interfaces.auth.google_oauth_provider import GoogleOAuthProvider
 from conditioner.shared.constants import (
     GOOGLE_FITNESS_SCOPES,
     GOOGLE_IDENTITY_SCOPES,

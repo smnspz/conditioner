@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from datetime import time
 
-from conditioner.core.domain.questionnaire import QuestionnaireResponse
-from conditioner.core.domain.readiness import ReadinessScore, ReadinessZone
-from conditioner.core.domain.wearable_metrics import WearableDailyMetrics
-from conditioner.core.services.baseline import Baseline
+from conditioner.core.domain.questionnaire.questionnaire import QuestionnaireResponse
+from conditioner.core.domain.readiness.readiness import ReadinessScore, ReadinessZone
+from conditioner.core.domain.wearables.wearable_metrics import WearableDailyMetrics
+from conditioner.core.services.readiness.baseline import Baseline
 
 # Neutral sub-score used when a metric is missing and can't be normalized
 NEUTRAL_SUB_SCORE = 0.8
