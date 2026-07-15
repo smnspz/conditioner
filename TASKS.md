@@ -91,6 +91,9 @@
 - [ ] Data deletion endpoint (cascades across all tables holding user health data).
 - [ ] Retention/expiry policy for raw wearable data.
 
+### 11. Deployment
+- [ ] Run D1 migrations on push to production (e.g. CI step calling `./scripts/migrate_d1.sh prod` before deploy).
+
 ### 10. Testing
 - [ ] Unit tests per service/use case as built.
 - [ ] Integration tests for adapters (SQLite, Google Health client mocked).
