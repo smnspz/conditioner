@@ -10,6 +10,7 @@ from conditioner.api.dependencies import (
     get_access_token_service,
     get_constraints_repository,
     get_current_user_id,
+    get_exercise_catalog_repository,
     get_fitness_level_repository,
     get_readiness_repository,
     get_workout_generation_provider,
@@ -18,6 +19,9 @@ from conditioner.api.dependencies import (
 from conditioner.api.main import app
 from conditioner.core.adapters.persistence.sqlite.constraints_repository import (
     SqliteConstraintsRepository,
+)
+from conditioner.core.adapters.persistence.sqlite.exercise_catalog_repository import (
+    SqliteExerciseCatalogRepository,
 )
 from conditioner.core.adapters.persistence.sqlite.fitness_level_repository import (
     SqliteFitnessLevelRepository,
@@ -31,7 +35,7 @@ from conditioner.core.adapters.persistence.sqlite.workout_repository import (
 from conditioner.core.domain.fitness.fitness_level import FitnessLevel
 from conditioner.core.domain.readiness.readiness import ReadinessScore, ReadinessZone
 from conditioner.core.domain.workout.constraints import TrainingGoal, WorkoutConstraints
-from conditioner.core.domain.workout.workout import Exercise, ExerciseModality, Session, Workout
+from conditioner.core.domain.workout.workout import Block, BlockExercise, BlockType, Session, Workout
 from conditioner.core.services.auth.access_tokens import AccessTokenService
 from conditioner.core.services.auth.jwt_tokens import JwtSigner
 
@@ -61,6 +65,9 @@ def client(db_path: str) -> Iterator[TestClient]:
         db_path
     )
     app.dependency_overrides[get_workout_repository] = lambda: SqliteWorkoutRepository(db_path)
+    app.dependency_overrides[get_exercise_catalog_repository] = (
+        lambda: SqliteExerciseCatalogRepository(db_path)
+    )
     app.dependency_overrides[get_access_token_service] = lambda: token_service
     app.dependency_overrides[get_current_user_id] = lambda: _USER_ID
     try:
@@ -137,12 +144,20 @@ async def test_adjust_scales_remaining_sessions(client: TestClient, db_path: str
                 Session(
                     id="session-1",
                     date=_WEEK_START,
-                    exercises=[
-                        Exercise(
-                            id="exercise-1",
-                            name="Back squat",
-                            modality=ExerciseModality.STRENGTH,
-                            sets=4,
+                    blocks=[
+                        Block(
+                            id="block-1",
+                            type=BlockType.MAIN,
+                            estimated_minutes=30,
+                            exercises=[
+                                BlockExercise(
+                                    id="ex-1",
+                                    exercise_id="bw_squat",
+                                    exercise_name="Bodyweight Squat",
+                                    sets=4,
+                                    reps=10,
+                                )
+                            ],
                         )
                     ],
                 )
@@ -155,7 +170,8 @@ async def test_adjust_scales_remaining_sessions(client: TestClient, db_path: str
     )
 
     assert response.status_code == 200
-    assert response.json()["sessions"][0]["exercises"][0]["sets"] == 3
+    blocks = response.json()["sessions"][0]["blocks"]
+    assert blocks[0]["exercises"][0]["sets"] == 3
 
 
 def test_regenerate_rejects_when_constraints_missing(client: TestClient) -> None:

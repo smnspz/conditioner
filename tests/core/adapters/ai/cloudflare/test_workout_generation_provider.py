@@ -10,11 +10,12 @@ from conditioner.core.adapters.ai.cloudflare.workout_generation_provider import 
 from conditioner.core.domain.fitness.fitness_level import FitnessLevel
 from conditioner.core.domain.readiness.readiness import ReadinessScore, ReadinessZone
 from conditioner.core.domain.workout.constraints import TrainingGoal, WorkoutConstraints
+from conditioner.core.domain.workout.exercise_catalog import ExerciseCatalogEntry
 from conditioner.core.domain.workout.workout import ExerciseModality
 
 _CONSTRAINTS = WorkoutConstraints(
     user_id="user-1",
-    equipment=["barbell"],
+    equipment=["dumbbells"],
     goal=TrainingGoal.MMA_CONDITIONING,
     available_minutes_by_weekday={0: 60},
 )
@@ -22,19 +23,33 @@ _FITNESS_LEVEL = FitnessLevel(user_id="user-1", week_start=date(2026, 7, 13), sc
 _READINESS = ReadinessScore(
     user_id="user-1", date=date(2026, 7, 13), score=75, zone=ReadinessZone.GOOD
 )
+_CATALOG = [
+    ExerciseCatalogEntry(
+        id="db_goblet_squat",
+        name="Goblet Squat",
+        modality=ExerciseModality.STRENGTH,
+        movement_pattern="squat",
+    )
+]
 
 _PLAN = {
     "sessions": [
         {
             "day_offset": 0,
-            "exercises": [
+            "blocks": [
                 {
-                    "name": "Back squat",
-                    "modality": "strength",
-                    "sets": 5,
-                    "reps": 5,
-                    "target_load": 80.0,
-                    "equipment": "barbell",
+                    "type": "main",
+                    "estimated_minutes": 30,
+                    "exercises": [
+                        {
+                            "exercise_id": "db_goblet_squat",
+                            "sets": 3,
+                            "reps": 10,
+                            "rest_seconds": 60,
+                            "intensity_cue": "RPE 7",
+                            "notes": "",
+                        }
+                    ],
                 }
             ],
         }
@@ -43,8 +58,6 @@ _PLAN = {
 
 
 def _fake_response(result: dict, *, as_string: bool) -> httpx.Response:
-    # JSON mode on /ai/run/{model} returns the structured output as a JSON-formatted
-    # string under result.response in some responses, an already-parsed object in others.
     return httpx.Response(
         200,
         json={
@@ -67,6 +80,7 @@ async def _assert_maps_plan_to_workout(response: httpx.Response) -> None:
             constraints=_CONSTRAINTS,
             fitness_level=_FITNESS_LEVEL,
             readiness=_READINESS,
+            catalog_entries=_CATALOG,
         )
 
     assert workout.user_id == "user-1"
@@ -74,11 +88,14 @@ async def _assert_maps_plan_to_workout(response: httpx.Response) -> None:
     assert len(workout.sessions) == 1
     session = workout.sessions[0]
     assert session.date == date(2026, 7, 13)
-    exercise = session.exercises[0]
-    assert exercise.name == "Back squat"
-    assert exercise.modality == ExerciseModality.STRENGTH
-    assert exercise.sets == 5
-    assert exercise.target_load == 80.0
+    assert len(session.blocks) == 1
+    block = session.blocks[0]
+    assert block.type.value == "main"
+    exercise = block.exercises[0]
+    assert exercise.exercise_id == "db_goblet_squat"
+    assert exercise.exercise_name == "Goblet Squat"
+    assert exercise.sets == 3
+    assert exercise.reps == 10
 
 
 async def test_generate_weekly_plan_maps_string_encoded_response_to_workout() -> None:
@@ -100,6 +117,7 @@ async def test_generate_weekly_plan_calls_correct_url_with_structured_output_sch
             constraints=_CONSTRAINTS,
             fitness_level=_FITNESS_LEVEL,
             readiness=_READINESS,
+            catalog_entries=_CATALOG,
         )
 
     args, kwargs = post_mock.call_args
@@ -112,8 +130,8 @@ async def test_generate_weekly_plan_calls_correct_url_with_structured_output_sch
     assert "sessions" in kwargs["json"]["response_format"]["json_schema"]["properties"]
     assert kwargs["json"]["max_tokens"] == 4096
 
-    # The equipment enum on each exercise variant is constrained to this request's
-    # constraints (barbell) plus bodyweight, not a fixed/static list
+    # exercise_id is constrained to the catalog IDs
     defs = kwargs["json"]["response_format"]["json_schema"]["$defs"]
-    equipment_enum = defs["StrengthExerciseSchema"]["properties"]["equipment"]["enum"]
-    assert set(equipment_enum) == {"barbell", "bodyweight"}
+    id_field = defs["BlockExerciseSchema"]["properties"]["exercise_id"]
+    allowed = set(id_field["enum"]) if "enum" in id_field else {id_field["const"]}
+    assert allowed == {"db_goblet_squat"}

@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from conditioner.api.dependencies import (
     get_constraints_repository,
     get_current_user_id,
+    get_exercise_catalog_repository,
     get_fitness_level_repository,
     get_readiness_repository,
     get_workout_generation_provider,
@@ -15,6 +16,9 @@ from conditioner.api.dto.workouts import WorkoutOut
 from conditioner.core.interfaces.fitness.fitness_level_repository import FitnessLevelRepository
 from conditioner.core.interfaces.readiness.readiness_repository import ReadinessRepository
 from conditioner.core.interfaces.workout.constraints_repository import ConstraintsRepository
+from conditioner.core.interfaces.workout.exercise_catalog_repository import (
+    ExerciseCatalogRepository,
+)
 from conditioner.core.interfaces.workout.workout_generation_provider import (
     WorkoutGenerationProvider,
 )
@@ -44,6 +48,9 @@ async def generate(
         WorkoutGenerationProvider, Depends(get_workout_generation_provider)
     ],
     workout_repository: Annotated[WorkoutRepository, Depends(get_workout_repository)],
+    catalog_repository: Annotated[
+        ExerciseCatalogRepository, Depends(get_exercise_catalog_repository)
+    ],
 ) -> WorkoutOut:
     """Generate and persist the authenticated user's weekly workout plan."""
 
@@ -56,6 +63,7 @@ async def generate(
             readiness_repository,
             generation_provider,
             workout_repository,
+            catalog_repository,
         )
     except PrerequisitesMissingError as exc:
         raise HTTPException(
@@ -81,6 +89,9 @@ async def regenerate(
         WorkoutGenerationProvider, Depends(get_workout_generation_provider)
     ],
     workout_repository: Annotated[WorkoutRepository, Depends(get_workout_repository)],
+    catalog_repository: Annotated[
+        ExerciseCatalogRepository, Depends(get_exercise_catalog_repository)
+    ],
 ) -> WorkoutOut:
     """Regenerate the authenticated user's weekly plan, e.g. after constraints changed."""
 
@@ -93,6 +104,7 @@ async def regenerate(
             readiness_repository,
             generation_provider,
             workout_repository,
+            catalog_repository,
         )
     except PrerequisitesMissingError as exc:
         raise HTTPException(

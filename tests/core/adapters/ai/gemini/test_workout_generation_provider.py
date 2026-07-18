@@ -8,9 +8,18 @@ from conditioner.core.adapters.ai.gemini.workout_generation_provider import (
 from conditioner.core.domain.fitness.fitness_level import FitnessLevel
 from conditioner.core.domain.readiness.readiness import ReadinessScore, ReadinessZone
 from conditioner.core.domain.workout.constraints import TrainingGoal, WorkoutConstraints
+from conditioner.core.domain.workout.exercise_catalog import ExerciseCatalogEntry
 from conditioner.core.domain.workout.workout import ExerciseModality
 
 _FITNESS_LEVEL = FitnessLevel(user_id="user-1", week_start=date(2026, 7, 13), score=6)
+_CATALOG = [
+    ExerciseCatalogEntry(
+        id="bw_push_up",
+        name="Push-Up",
+        modality=ExerciseModality.STRENGTH,
+        movement_pattern="push",
+    )
+]
 
 
 def _fake_interaction(output_text: str) -> AsyncMock:
@@ -26,14 +35,20 @@ async def test_generate_weekly_plan_maps_structured_response_to_workout() -> Non
             "sessions": [
                 {
                     "day_offset": 0,
-                    "exercises": [
+                    "blocks": [
                         {
-                            "name": "Back squat",
-                            "modality": "strength",
-                            "sets": 5,
-                            "reps": 5,
-                            "target_load": 80.0,
-                            "equipment": "barbell",
+                            "type": "main",
+                            "estimated_minutes": 30,
+                            "exercises": [
+                                {
+                                    "exercise_id": "bw_push_up",
+                                    "sets": 3,
+                                    "reps": 12,
+                                    "rest_seconds": 60,
+                                    "intensity_cue": "RPE 7",
+                                    "notes": "",
+                                }
+                            ],
                         }
                     ],
                 }
@@ -49,7 +64,7 @@ async def test_generate_weekly_plan_maps_structured_response_to_workout() -> Non
         week_start=date(2026, 7, 13),
         constraints=WorkoutConstraints(
             user_id="user-1",
-            equipment=["barbell"],
+            equipment=[],
             goal=TrainingGoal.MMA_CONDITIONING,
             available_minutes_by_weekday={0: 60},
         ),
@@ -57,6 +72,7 @@ async def test_generate_weekly_plan_maps_structured_response_to_workout() -> Non
         readiness=ReadinessScore(
             user_id="user-1", date=date(2026, 7, 13), score=75, zone=ReadinessZone.GOOD
         ),
+        catalog_entries=_CATALOG,
     )
 
     assert workout.user_id == "user-1"
@@ -64,12 +80,12 @@ async def test_generate_weekly_plan_maps_structured_response_to_workout() -> Non
     assert len(workout.sessions) == 1
     session = workout.sessions[0]
     assert session.date == date(2026, 7, 13)
-    assert len(session.exercises) == 1
-    exercise = session.exercises[0]
-    assert exercise.name == "Back squat"
-    assert exercise.modality == ExerciseModality.STRENGTH
-    assert exercise.sets == 5
-    assert exercise.target_load == 80.0
+    assert len(session.blocks) == 1
+    exercise = session.blocks[0].exercises[0]
+    assert exercise.exercise_id == "bw_push_up"
+    assert exercise.exercise_name == "Push-Up"
+    assert exercise.sets == 3
+    assert exercise.reps == 12
 
 
 async def test_generate_weekly_plan_calls_gemini_with_structured_output_schema() -> None:
@@ -90,6 +106,7 @@ async def test_generate_weekly_plan_calls_gemini_with_structured_output_schema()
         readiness=ReadinessScore(
             user_id="user-1", date=date(2026, 7, 13), score=50, zone=ReadinessZone.MODERATE
         ),
+        catalog_entries=_CATALOG,
     )
 
     _, kwargs = create_mock.call_args

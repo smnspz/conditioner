@@ -4,32 +4,56 @@ from datetime import date as Date
 
 from pydantic import BaseModel
 
-from conditioner.core.domain.workout.workout import Exercise, Session, Workout
+from conditioner.core.domain.workout.workout import Block, BlockExercise, Session, Workout
 
 
-class ExerciseOut(BaseModel):
-    """Serialized exercise returned to the client."""
+class BlockExerciseOut(BaseModel):
+    """Serialized block exercise returned to the client."""
 
     id: str
-    name: str
-    modality: str
-    sets: int | None
+    exercise_id: str
+    exercise_name: str
+    sets: int
     reps: int | None
-    duration_minutes: float | None
-    target_load: float | None
+    duration_seconds: int | None
+    rest_seconds: int
+    intensity_cue: str
+    notes: str
 
     @classmethod
-    def from_domain(cls, exercise: Exercise) -> ExerciseOut:
-        """Build from a domain Exercise."""
+    def from_domain(cls, exercise: BlockExercise) -> BlockExerciseOut:
+        """Build from a domain BlockExercise."""
 
         return cls(
             id=exercise.id,
-            name=exercise.name,
-            modality=exercise.modality.value,
+            exercise_id=exercise.exercise_id,
+            exercise_name=exercise.exercise_name,
             sets=exercise.sets,
             reps=exercise.reps,
-            duration_minutes=exercise.duration_minutes,
-            target_load=exercise.target_load,
+            duration_seconds=exercise.duration_seconds,
+            rest_seconds=exercise.rest_seconds,
+            intensity_cue=exercise.intensity_cue,
+            notes=exercise.notes,
+        )
+
+
+class BlockOut(BaseModel):
+    """Serialized session block returned to the client."""
+
+    id: str
+    type: str
+    estimated_minutes: int
+    exercises: list[BlockExerciseOut]
+
+    @classmethod
+    def from_domain(cls, block: Block) -> BlockOut:
+        """Build from a domain Block."""
+
+        return cls(
+            id=block.id,
+            type=block.type.value,
+            estimated_minutes=block.estimated_minutes,
+            exercises=[BlockExerciseOut.from_domain(ex) for ex in block.exercises],
         )
 
 
@@ -38,9 +62,7 @@ class SessionOut(BaseModel):
 
     id: str
     date: Date
-    warmup_exercises: list[ExerciseOut]
-    exercises: list[ExerciseOut]
-    cooldown_exercises: list[ExerciseOut]
+    blocks: list[BlockOut]
     completed: bool
 
     @classmethod
@@ -50,10 +72,8 @@ class SessionOut(BaseModel):
         return cls(
             id=session.id,
             date=session.date,
+            blocks=[BlockOut.from_domain(b) for b in session.blocks],
             completed=session.completed,
-            warmup_exercises=[ExerciseOut.from_domain(ex) for ex in session.warmup_exercises],
-            exercises=[ExerciseOut.from_domain(exercise) for exercise in session.exercises],
-            cooldown_exercises=[ExerciseOut.from_domain(ex) for ex in session.cooldown_exercises],
         )
 
 

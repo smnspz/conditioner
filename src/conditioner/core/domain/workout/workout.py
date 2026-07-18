@@ -13,27 +13,57 @@ class ExerciseModality(Enum):
     MOBILITY = "mobility"
 
 
+class BlockType(Enum):
+    """Phase of a training session a block belongs to."""
+
+    WARMUP = "warmup"
+    MAIN = "main"
+    FINISHER = "finisher"
+    COOLDOWN = "cooldown"
+
+
 @dataclass
-class Exercise:
-    """A single prescribed exercise within a session.
+class BlockExercise:
+    """A single prescribed exercise within a block.
 
     Attributes:
-        id: Unique identifier.
-        name: Exercise name (e.g. "Back squat").
-        modality: Broad category of the exercise.
+        id: Unique identifier assigned at generation time.
+        exercise_id: Stable catalog ID (e.g. 'bw_push_up').
+        exercise_name: Display name denormalized from the catalog at generation time.
         sets: Number of sets prescribed.
-        reps: Number of reps per set, if rep-based.
-        duration_minutes: Duration, if time-based rather than rep-based.
-        target_load: Target intensity/load (e.g. % of 1RM, or pace), provider-specific units.
+        reps: Reps per set; None for time-based exercises.
+        duration_seconds: Duration per set; None for rep-based exercises.
+        rest_seconds: Rest between sets in seconds.
+        intensity_cue: Qualitative intensity instruction (e.g. 'RPE 7', 'controlled tempo').
+        notes: Optional exercise-specific note.
     """
 
     id: str
-    name: str
-    modality: ExerciseModality
-    sets: int | None = None
+    exercise_id: str
+    exercise_name: str
+    sets: int = 1
     reps: int | None = None
-    duration_minutes: float | None = None
-    target_load: float | None = None
+    duration_seconds: int | None = None
+    rest_seconds: int = 60
+    intensity_cue: str = ""
+    notes: str = ""
+
+
+@dataclass
+class Block:
+    """A phase segment of a training session (e.g. warmup, main work, cooldown).
+
+    Attributes:
+        id: Unique identifier.
+        type: Phase classification (warmup / main / finisher / cooldown).
+        estimated_minutes: Expected duration of the block in minutes.
+        exercises: Exercises prescribed within this block.
+    """
+
+    id: str
+    type: BlockType
+    estimated_minutes: int
+    exercises: list[BlockExercise] = field(default_factory=list)
 
 
 @dataclass
@@ -43,17 +73,13 @@ class Session:
     Attributes:
         id: Unique identifier.
         date: The calendar day this session is scheduled for.
-        exercises: The main exercises prescribed for this session.
-        warmup_exercises: Optional warm-up exercises preceding the main block.
-        cooldown_exercises: Optional cool-down exercises following the main block.
+        blocks: Ordered list of blocks making up the session.
         completed: Whether the user has completed this session.
     """
 
     id: str
     date: date
-    exercises: list[Exercise] = field(default_factory=list[Exercise])
-    warmup_exercises: list[Exercise] = field(default_factory=list[Exercise])
-    cooldown_exercises: list[Exercise] = field(default_factory=list[Exercise])
+    blocks: list[Block] = field(default_factory=list)
     completed: bool = False
 
 
@@ -71,4 +97,4 @@ class Workout:
     id: str
     user_id: str
     week_start: date
-    sessions: list[Session] = field(default_factory=list[Session])
+    sessions: list[Session] = field(default_factory=list)

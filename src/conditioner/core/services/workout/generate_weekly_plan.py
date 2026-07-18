@@ -7,6 +7,9 @@ from conditioner.core.domain.workout.workout import Workout
 from conditioner.core.interfaces.fitness.fitness_level_repository import FitnessLevelRepository
 from conditioner.core.interfaces.readiness.readiness_repository import ReadinessRepository
 from conditioner.core.interfaces.workout.constraints_repository import ConstraintsRepository
+from conditioner.core.interfaces.workout.exercise_catalog_repository import (
+    ExerciseCatalogRepository,
+)
 from conditioner.core.interfaces.workout.workout_generation_provider import (
     WorkoutGenerationProvider,
 )
@@ -25,6 +28,7 @@ async def generate_weekly_plan(
     readiness_repository: ReadinessRepository,
     generation_provider: WorkoutGenerationProvider,
     workout_repository: WorkoutRepository,
+    catalog_repository: ExerciseCatalogRepository,
 ) -> Workout:
     """Generate and persist a user's weekly workout plan.
 
@@ -32,6 +36,7 @@ async def generate_weekly_plan(
     constraints.initial_perceived_fitness for the first week before the user has submitted a
     survey. Readiness is optional — it may be absent for a user's very first generation before
     any wearable or questionnaire data exists.
+    Raises PrerequisitesMissingError if no exercises are available for the user's gear.
     """
 
     # Get the user's constraints
@@ -57,9 +62,17 @@ async def generate_weekly_plan(
     # Get the user's readiness score for the week's start date (may be absent for first week)
     readiness = await readiness_repository.get_by_date(user_id, week_start)
 
+    # Get the gear-filtered exercise catalog for this user
+    catalog_entries = await catalog_repository.filter_by_gear(constraints.equipment)
+    if len(catalog_entries) < 5:
+        raise PrerequisitesMissingError(
+            "Not enough exercises available for the given equipment — "
+            f"found {len(catalog_entries)}, minimum is 5"
+        )
+
     # Get the generated plan from the AI provider
     workout = await generation_provider.generate_weekly_plan(
-        user_id, week_start, constraints, fitness_level, readiness
+        user_id, week_start, constraints, fitness_level, readiness, catalog_entries
     )
     await workout_repository.save(workout)
 

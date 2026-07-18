@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from conditioner.core.domain.readiness.readiness import ReadinessScore, ReadinessZone
-from conditioner.core.domain.workout.workout import Exercise, ExerciseModality, Session, Workout
+from conditioner.core.domain.workout.workout import Block, BlockExercise, BlockType, Session, Workout
 from conditioner.core.services.workout.adjust_daily_sessions import adjust_daily_sessions
 from conditioner.core.services.workout.generate_weekly_plan import PrerequisitesMissingError
 
@@ -20,12 +20,20 @@ _WORKOUT = Workout(
         Session(
             id="session-1",
             date=_DAY,
-            exercises=[
-                Exercise(
-                    id="exercise-1",
-                    name="Back squat",
-                    modality=ExerciseModality.STRENGTH,
-                    sets=4,
+            blocks=[
+                Block(
+                    id="block-1",
+                    type=BlockType.MAIN,
+                    estimated_minutes=30,
+                    exercises=[
+                        BlockExercise(
+                            id="ex-1",
+                            exercise_id="bw_squat",
+                            exercise_name="Bodyweight Squat",
+                            sets=4,
+                            reps=10,
+                        )
+                    ],
                 )
             ],
         )
@@ -45,7 +53,8 @@ async def test_adjusts_and_saves_workout_for_the_week() -> None:
     adjusted = await adjust_daily_sessions(_USER_ID, _DAY, readiness_repo, workout_repo)
 
     workout_repo.get_by_week.assert_awaited_once_with(_USER_ID, _WEEK_START)
-    assert adjusted.sessions[0].exercises[0].sets == 3
+    # 4 sets * 0.75 (MODERATE zone) = 3
+    assert adjusted.sessions[0].blocks[0].exercises[0].sets == 3
     workout_repo.save.assert_awaited_once_with(adjusted)
 
 

@@ -7,6 +7,9 @@ from conditioner.core.domain.workout.workout import Workout
 from conditioner.core.interfaces.fitness.fitness_level_repository import FitnessLevelRepository
 from conditioner.core.interfaces.readiness.readiness_repository import ReadinessRepository
 from conditioner.core.interfaces.workout.constraints_repository import ConstraintsRepository
+from conditioner.core.interfaces.workout.exercise_catalog_repository import (
+    ExerciseCatalogRepository,
+)
 from conditioner.core.interfaces.workout.workout_generation_provider import (
     WorkoutGenerationProvider,
 )
@@ -22,6 +25,7 @@ async def regenerate_week(
     readiness_repository: ReadinessRepository,
     generation_provider: WorkoutGenerationProvider,
     workout_repository: WorkoutRepository,
+    catalog_repository: ExerciseCatalogRepository,
 ) -> Workout:
     """Regenerate a user's weekly plan against current constraints, keeping completed sessions.
 
@@ -55,6 +59,14 @@ async def regenerate_week(
     if readiness is None:
         raise PrerequisitesMissingError("No readiness score available for this date")
 
+    # Get the gear-filtered exercise catalog for this user
+    catalog_entries = await catalog_repository.filter_by_gear(constraints.equipment)
+    if len(catalog_entries) < 5:
+        raise PrerequisitesMissingError(
+            "Not enough exercises available for the given equipment — "
+            f"found {len(catalog_entries)}, minimum is 5"
+        )
+
     # Get the previous plan to preserve completed sessions
     previous = await workout_repository.get_by_week(user_id, week_start)
     completed_by_date = (
@@ -65,7 +77,7 @@ async def regenerate_week(
 
     # Get the regenerated plan from the AI provider
     regenerated = await generation_provider.generate_weekly_plan(
-        user_id, week_start, constraints, fitness_level, readiness
+        user_id, week_start, constraints, fitness_level, readiness, catalog_entries
     )
     regenerated.sessions = [
         completed_by_date.get(session.date, session) for session in regenerated.sessions

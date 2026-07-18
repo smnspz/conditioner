@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
-from typing import Annotated, Literal
+from typing import Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, Field, create_model
@@ -9,7 +9,8 @@ from pydantic import BaseModel, Field, create_model
 from conditioner.core.domain.fitness.fitness_level import FitnessLevel
 from conditioner.core.domain.readiness.readiness import ReadinessScore, ReadinessZone
 from conditioner.core.domain.workout.constraints import WorkoutConstraints
-from conditioner.core.domain.workout.workout import Exercise, ExerciseModality, Session
+from conditioner.core.domain.workout.exercise_catalog import ExerciseCatalogEntry
+from conditioner.core.domain.workout.workout import Block, BlockExercise, BlockType, Session
 
 # Per-zone volume/intensity guidance injected into the prompt.
 _ZONE_GUIDANCE: dict[ReadinessZone, str] = {
@@ -67,43 +68,41 @@ def _fitness_level_line(fitness_level: FitnessLevel) -> str:
     # Return the formatted fitness level line
     return f"Fitness level: {score}/10 ({tier}). {guidance}"
 
-# Structured-output schema shared by all WorkoutGenerationProvider adapters; exercise
-# is a discriminated union on modality.
+
+class BlockExerciseSchema(BaseModel):
+    """Structured-output schema for a single exercise within a block.
+
+    Attributes:
+        exercise_id: Catalog ID from the allowed list — never invent IDs.
+        sets: Number of sets.
+        reps: Reps per set; omit for time-based exercises.
+        duration_seconds: Duration per set in seconds; omit for rep-based exercises.
+        rest_seconds: Rest between sets in seconds.
+        intensity_cue: Qualitative intensity note (e.g. 'RPE 7', 'controlled tempo').
+        notes: Optional exercise-specific coaching note.
+    """
+
+    exercise_id: str
+    sets: int = Field(ge=1)
+    reps: int | None = None
+    duration_seconds: int | None = None
+    rest_seconds: int = Field(default=60, ge=0)
+    intensity_cue: str = ""
+    notes: str = ""
 
 
-class StrengthExerciseSchema(BaseModel):
-    """Structured-output schema for a strength exercise: sets/reps, no duration."""
+class BlockSchema(BaseModel):
+    """Structured-output schema for a block (phase) within a session.
 
-    name: str
-    # Discriminator tag as a plain str literal, not an enum.
-    modality: Literal["strength"] = "strength"
-    sets: int
-    reps: int
-    target_load: float | None = None
+    Attributes:
+        type: Phase label — one of 'warmup', 'main', 'finisher', 'cooldown'.
+        estimated_minutes: Expected duration of this block in minutes.
+        exercises: Exercises prescribed in this block.
+    """
 
-
-class CardioExerciseSchema(BaseModel):
-    """Structured-output schema for a cardio exercise: duration, no sets/reps."""
-
-    name: str
-    modality: Literal["cardio"] = "cardio"
-    duration_minutes: float
-    target_load: float | None = None
-
-
-class MobilityExerciseSchema(BaseModel):
-    """Structured-output schema for a mobility exercise: duration, no sets/reps."""
-
-    name: str
-    modality: Literal["mobility"] = "mobility"
-    duration_minutes: float
-    target_load: float | None = None
-
-
-ExerciseSchema = Annotated[
-    StrengthExerciseSchema | CardioExerciseSchema | MobilityExerciseSchema,
-    Field(discriminator="modality"),
-]
+    type: Literal["warmup", "main", "finisher", "cooldown"]
+    estimated_minutes: int = Field(ge=1)
+    exercises: list[BlockExerciseSchema]
 
 
 class SessionSchema(BaseModel):
@@ -111,15 +110,11 @@ class SessionSchema(BaseModel):
 
     Attributes:
         day_offset: Days from week_start (0=Monday).
-        warmup_exercises: Optional warm-up block before main exercises.
-        exercises: Main exercises for the session.
-        cooldown_exercises: Optional cool-down block after main exercises.
+        blocks: Ordered list of blocks making up the session.
     """
 
     day_offset: int
-    warmup_exercises: list[ExerciseSchema] = []
-    exercises: list[ExerciseSchema] = []
-    cooldown_exercises: list[ExerciseSchema] = []
+    blocks: list[BlockSchema]
 
 
 class WeeklyPlanSchema(BaseModel):
@@ -128,44 +123,31 @@ class WeeklyPlanSchema(BaseModel):
     sessions: list[SessionSchema]
 
 
-def build_weekly_plan_schema(constraints: WorkoutConstraints) -> type[WeeklyPlanSchema]:
-    """Build a per-request structured-output schema constraining each exercise's equipment
-    to what the user actually has available (plus bodyweight).
+def build_weekly_plan_schema(
+    catalog_entries: list[ExerciseCatalogEntry],
+) -> type[WeeklyPlanSchema]:
+    """Build a per-request structured-output schema with exercise_id constrained to catalog IDs.
 
-    Equipment can't be a static field on StrengthExerciseSchema etc. — the allowed set is
-    per-user (constraints.equipment), not known until request time — so the exercise/session/
-    plan schema classes are rebuilt per call via create_model, subclassing the static base
-    classes so isinstance checks in _to_exercise still work on the dynamic instances.
+    exercise_id becomes a Literal[*catalog_ids] on BlockExerciseSchema so the model can only
+    output IDs that exist in the pre-filtered catalog — structural enforcement, not a prompt hint.
     """
 
-    # Set allowed equipment values, deduped, bodyweight always allowed
-    allowed = tuple(dict.fromkeys([*constraints.equipment, "bodyweight"]))
-
-    dyn_strength = create_model(
-        "StrengthExerciseSchema",
-        __base__=StrengthExerciseSchema,
-        equipment=(Literal[allowed], ...),
+    # Set allowed exercise IDs from the filtered catalog
+    allowed_ids = tuple(e.id for e in catalog_entries)
+    dyn_exercise = create_model(
+        "BlockExerciseSchema",
+        __base__=BlockExerciseSchema,
+        exercise_id=(Literal[allowed_ids], ...),
     )
-    dyn_cardio = create_model(
-        "CardioExerciseSchema",
-        __base__=CardioExerciseSchema,
-        equipment=(Literal[allowed], ...),
+    dyn_block = create_model(
+        "BlockSchema",
+        __base__=BlockSchema,
+        exercises=(list[dyn_exercise], ...),
     )
-    dyn_mobility = create_model(
-        "MobilityExerciseSchema",
-        __base__=MobilityExerciseSchema,
-        equipment=(Literal[allowed], ...),
-    )
-    dyn_exercise = Annotated[
-        dyn_strength | dyn_cardio | dyn_mobility,
-        Field(discriminator="modality"),
-    ]
     dyn_session = create_model(
         "SessionSchema",
         __base__=SessionSchema,
-        warmup_exercises=(list[dyn_exercise], []),
-        exercises=(list[dyn_exercise], []),
-        cooldown_exercises=(list[dyn_exercise], []),
+        blocks=(list[dyn_block], ...),
     )
 
     # Return the per-request weekly plan schema class
@@ -179,17 +161,17 @@ def build_prompt(
     constraints: WorkoutConstraints,
     fitness_level: FitnessLevel,
     readiness: ReadinessScore | None,
+    catalog_entries: list[ExerciseCatalogEntry],
 ) -> str:
-    """Build the text prompt describing this week's constraints, fitness level, and readiness.
+    """Build the text prompt describing this week's constraints, fitness level, readiness,
+    and the pre-filtered exercise catalog the AI must draw from.
 
     fitness_level (weekly self-report, 1–10) sets the difficulty and complexity tier.
     readiness (daily computed score, 0–100) adjusts volume and intensity within that tier.
     readiness may be None for a user's first-ever generation before any wearable or
     questionnaire data exists; the prompt notes this and defers entirely to fitness level.
+    catalog_entries is the gear-filtered catalog — every entry is valid for this user.
     """
-
-    equipment_ids = constraints.equipment
-    equipment = ", ".join(equipment_ids) or "none (bodyweight only)"
 
     if readiness is None:
         readiness_line = (
@@ -202,94 +184,97 @@ def build_prompt(
             f"{_ZONE_GUIDANCE[readiness.zone]}"
         )
 
-    # Equipment-specific notes injected when the user has certain gear available
-    equipment_notes = ""
-    if "resistance_bands" in equipment_ids:
-        equipment_notes += (
-            "\nResistance bands are a full strength-training tool — band rows, band presses, "
-            "band squats, band deadlifts, band curls, band tricep extensions, etc. are all "
-            "appropriate strength exercises. Do not default to cardio or mobility only when "
-            "bands are the primary available equipment."
+    # Build compact catalog table (one line per exercise)
+    catalog_lines = ["exercise_id | name | modality | movement_pattern | difficulty"]
+    for e in sorted(catalog_entries, key=lambda x: x.id):
+        catalog_lines.append(
+            f"{e.id} | {e.name} | {e.modality.value} | {e.movement_pattern} | {e.difficulty}"
         )
+    catalog_section = "\n".join(catalog_lines)
 
-    # Warm-up/cool-down instruction section
+    # Warm-up/cool-down instruction
     if constraints.include_warmup_cooldown:
-        warmup_cooldown_section = (
-            "\nEach session must include:\n"
-            "  - A warmup_exercises block: 5–10 minutes of light mobility or low-intensity "
-            "cardio to prepare for the session.\n"
-            "  - A cooldown_exercises block: 5–10 minutes of static stretching or gentle "
-            "mobility to close the session.\n"
-            "Keep warm-up and cool-down exercises distinct from the main exercises block."
+        warmup_cooldown_instruction = (
+            "Each session must include a 'warmup' block (5–10 min, light mobility or cardio) "
+            "and a 'cooldown' block (5–10 min, static stretching or gentle mobility). "
+            "Keep warmup and cooldown exercises distinct from the main block."
         )
     else:
-        warmup_cooldown_section = (
-            "\nLeave warmup_exercises and cooldown_exercises empty — "
-            "the user does not want structured warm-up or cool-down blocks."
+        warmup_cooldown_instruction = (
+            "Do not include 'warmup' or 'cooldown' blocks — "
+            "the user does not want structured warm-up or cool-down."
         )
 
     # Return the full generation prompt
     return (
         f"Generate a weekly conditioning plan starting {week_start.isoformat()}.\n"
         f"Goal: {constraints.goal.value}.\n"
-        f"Available equipment: {equipment}.\n"
         f"Available minutes per weekday (0=Monday..6=Sunday): "
         f"{constraints.available_minutes_by_weekday}.\n"
         f"{_fitness_level_line(fitness_level)}\n"
         f"{readiness_line}\n"
         "Only schedule sessions on weekdays with available minutes, and keep each "
         "session within its day's time budget.\n"
-        f"Only use the listed equipment ({equipment}) and bodyweight exercises — never "
-        "prescribe an exercise requiring equipment that isn't listed. "
-        "Do not include any equipment name in an exercise name unless that equipment "
-        "appears in the allowed list above (e.g. never write 'Kettlebell Swing' if "
-        "kettlebells are not listed).\n"
-        "Set the equipment field on each exercise to the specific piece of equipment "
-        "actually used (e.g. 'resistance_bands', 'dumbbells'). Only set it to "
-        "'bodyweight' when the exercise genuinely requires no equipment at all.\n"
         "Vary the session focus across days — do not repeat the same exercise selection "
         "across multiple days. Rotate through lower-body, upper-body, full-body, "
-        "conditioning, and recovery-focused sessions as appropriate for the week."
-        f"{equipment_notes}"
-        f"{warmup_cooldown_section}"
+        "conditioning, and recovery-focused sessions as appropriate for the week.\n"
+        f"{warmup_cooldown_instruction}\n\n"
+        "EXERCISE CATALOG — use only exercise_id values from this table. "
+        "Do not invent IDs or use IDs not listed here.\n"
+        f"{catalog_section}\n\n"
+        "For each exercise: set reps OR duration_seconds (not both, not neither). "
+        "Strength exercises use sets+reps; cardio/mobility use sets+duration_seconds. "
+        "Isometric holds (e.g. plank) use sets+duration_seconds (duration = hold time in seconds)."
     )
 
 
-def _to_exercise(
-    schema: StrengthExerciseSchema | CardioExerciseSchema | MobilityExerciseSchema,
-) -> Exercise:
-    """Map a discriminated exercise schema variant to a domain Exercise."""
+def sessions_from_plan(
+    week_start: date,
+    plan: WeeklyPlanSchema,
+    catalog_index: dict[str, ExerciseCatalogEntry],
+) -> list[Session]:
+    """Map a generated weekly plan schema to domain Sessions.
 
-    if isinstance(schema, StrengthExerciseSchema):
-        return Exercise(
-            id=str(uuid4()),
-            name=schema.name,
-            modality=ExerciseModality(schema.modality),
-            sets=schema.sets,
-            reps=schema.reps,
-            target_load=schema.target_load,
+    catalog_index maps exercise_id to ExerciseCatalogEntry for name denormalization.
+    Unknown exercise_ids fall back to the raw ID as the display name.
+    """
+
+    sessions: list[Session] = []
+    for session_schema in plan.sessions:
+        blocks: list[Block] = []
+        for block_schema in session_schema.blocks:
+            exercises: list[BlockExercise] = []
+            for ex in block_schema.exercises:
+                entry = catalog_index.get(ex.exercise_id)
+
+                # Denormalize exercise name from catalog; fall back to ID if unknown
+                exercise_name = entry.name if entry else ex.exercise_id
+                exercises.append(
+                    BlockExercise(
+                        id=str(uuid4()),
+                        exercise_id=ex.exercise_id,
+                        exercise_name=exercise_name,
+                        sets=ex.sets,
+                        reps=ex.reps,
+                        duration_seconds=ex.duration_seconds,
+                        rest_seconds=ex.rest_seconds,
+                        intensity_cue=ex.intensity_cue,
+                        notes=ex.notes,
+                    )
+                )
+            blocks.append(
+                Block(
+                    id=str(uuid4()),
+                    type=BlockType(block_schema.type),
+                    estimated_minutes=block_schema.estimated_minutes,
+                    exercises=exercises,
+                )
+            )
+        sessions.append(
+            Session(
+                id=str(uuid4()),
+                date=week_start + timedelta(days=session_schema.day_offset),
+                blocks=blocks,
+            )
         )
-
-    # Return cardio/mobility exercise
-    return Exercise(
-        id=str(uuid4()),
-        name=schema.name,
-        modality=ExerciseModality(schema.modality),
-        duration_minutes=schema.duration_minutes,
-        target_load=schema.target_load,
-    )
-
-
-def sessions_from_plan(week_start: date, plan: WeeklyPlanSchema) -> list[Session]:
-    """Map a generated weekly plan schema to domain Sessions."""
-
-    return [
-        Session(
-            id=str(uuid4()),
-            date=week_start + timedelta(days=session.day_offset),
-            warmup_exercises=[_to_exercise(ex) for ex in session.warmup_exercises],
-            exercises=[_to_exercise(ex) for ex in session.exercises],
-            cooldown_exercises=[_to_exercise(ex) for ex in session.cooldown_exercises],
-        )
-        for session in plan.sessions
-    ]
+    return sessions

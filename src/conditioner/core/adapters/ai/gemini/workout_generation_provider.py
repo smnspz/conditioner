@@ -15,6 +15,7 @@ from conditioner.core.adapters.ai.workout_prompt import (
 from conditioner.core.domain.fitness.fitness_level import FitnessLevel
 from conditioner.core.domain.readiness.readiness import ReadinessScore
 from conditioner.core.domain.workout.constraints import WorkoutConstraints
+from conditioner.core.domain.workout.exercise_catalog import ExerciseCatalogEntry
 from conditioner.core.domain.workout.workout import Workout
 from conditioner.core.interfaces.workout.workout_generation_provider import (
     WorkoutGenerationProvider,
@@ -40,16 +41,20 @@ class GeminiWorkoutGenerationProvider(WorkoutGenerationProvider):
         constraints: WorkoutConstraints,
         fitness_level: FitnessLevel,
         readiness: ReadinessScore | None,
+        catalog_entries: list[ExerciseCatalogEntry],
     ) -> Workout:
         """Prompt Gemini for a weekly plan and map the structured response to a Workout."""
 
-        # Get the per-request schema, constraining exercise equipment to what's available
-        schema_cls = build_weekly_plan_schema(constraints)
+        # Get the per-request schema with exercise_id constrained to catalog IDs
+        schema_cls = build_weekly_plan_schema(catalog_entries)
+
+        # Build the catalog index for name denormalization in sessions_from_plan
+        catalog_index = {e.id: e for e in catalog_entries}
 
         # Get the model's structured response for this week's constraints and fitness state
         interaction = await self._client.aio.interactions.create(
             model=Constants.gemini_workout_model(),
-            input=build_prompt(week_start, constraints, fitness_level, readiness),
+            input=build_prompt(week_start, constraints, fitness_level, readiness, catalog_entries),
             response_format={
                 "type": "text",
                 "mime_type": "application/json",
@@ -66,5 +71,5 @@ class GeminiWorkoutGenerationProvider(WorkoutGenerationProvider):
             id=str(uuid4()),
             user_id=user_id,
             week_start=week_start,
-            sessions=sessions_from_plan(week_start, plan),
+            sessions=sessions_from_plan(week_start, plan, catalog_index),
         )
