@@ -228,6 +228,26 @@ def build_prompt(
     )
 
 
+def build_repair_prompt(original_plan_json: str, errors: list) -> str:
+    """Build a repair prompt asking the model to fix only the listed validation errors.
+
+    errors is a list of ValidationError objects (path, code, message).
+    """
+
+    error_lines = "\n".join(
+        f"  {e.path} | {e.code} | {e.message}" for e in errors
+    )
+
+    # Return the repair instructions prompt
+    return (
+        "The following workout plan JSON has validation errors. "
+        "Fix ONLY the fields listed below. Preserve every valid block and exercise unchanged. "
+        "Only use exercise_id values from the original catalog.\n\n"
+        f"Errors:\n{error_lines}\n\n"
+        f"Original plan:\n{original_plan_json}"
+    )
+
+
 def sessions_from_plan(
     week_start: date,
     plan: WeeklyPlanSchema,

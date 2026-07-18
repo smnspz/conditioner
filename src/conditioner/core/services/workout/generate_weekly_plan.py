@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import date
 
 from conditioner.core.domain.fitness.fitness_level import FitnessLevel
@@ -14,6 +15,9 @@ from conditioner.core.interfaces.workout.workout_generation_provider import (
     WorkoutGenerationProvider,
 )
 from conditioner.core.interfaces.workout.workout_repository import WorkoutRepository
+from conditioner.core.services.workout.fallback_workout import build_fallback_workout
+
+logger = logging.getLogger(__name__)
 
 
 class PrerequisitesMissingError(Exception):
@@ -29,14 +33,18 @@ async def generate_weekly_plan(
     generation_provider: WorkoutGenerationProvider,
     workout_repository: WorkoutRepository,
     catalog_repository: ExerciseCatalogRepository,
-) -> Workout:
+) -> tuple[Workout, bool]:
     """Generate and persist a user's weekly workout plan.
+
+    Returns (workout, is_fallback). is_fallback is True when AI generation failed and a
+    deterministic fallback plan was served instead.
 
     Requires constraints and a fitness level (weekly survey). The fitness level falls back to
     constraints.initial_perceived_fitness for the first week before the user has submitted a
     survey. Readiness is optional — it may be absent for a user's very first generation before
     any wearable or questionnaire data exists.
-    Raises PrerequisitesMissingError if no exercises are available for the user's gear.
+    Raises PrerequisitesMissingError if constraints are missing or fewer than 5 exercises
+    are available for the user's gear.
     """
 
     # Get the user's constraints
@@ -70,11 +78,20 @@ async def generate_weekly_plan(
             f"found {len(catalog_entries)}, minimum is 5"
         )
 
-    # Get the generated plan from the AI provider
-    workout = await generation_provider.generate_weekly_plan(
-        user_id, week_start, constraints, fitness_level, readiness, catalog_entries
-    )
+    # Get the generated plan from the AI provider; fall back deterministically if it fails
+    is_fallback = False
+    try:
+        workout = await generation_provider.generate_weekly_plan(
+            user_id, week_start, constraints, fitness_level, readiness, catalog_entries
+        )
+    except Exception:
+        logger.exception("generation.fallback_triggered user=%s", user_id)
+        workout = build_fallback_workout(
+            user_id, week_start, constraints, fitness_level, catalog_entries
+        )
+        is_fallback = True
+
     await workout_repository.save(workout)
 
-    # Return the generated workout
-    return workout
+    # Return the generated workout and whether it came from the fallback path
+    return workout, is_fallback

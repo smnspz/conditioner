@@ -39,7 +39,7 @@ _PLAN = {
             "blocks": [
                 {
                     "type": "main",
-                    "estimated_minutes": 30,
+                    "estimated_minutes": 60,
                     "exercises": [
                         {
                             "exercise_id": "db_goblet_squat",

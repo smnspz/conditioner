@@ -68,12 +68,13 @@ def _repos(*, constraints=_CONSTRAINTS, fitness_level=_FITNESS_LEVEL, readiness=
 async def test_generates_and_saves_plan_when_prerequisites_set() -> None:
     constraints_repo, fitness_repo, readiness_repo, provider, workout_repo, catalog_repo = _repos()
 
-    workout = await generate_weekly_plan(
+    workout, is_fallback = await generate_weekly_plan(
         _USER_ID, _WEEK_START, constraints_repo, fitness_repo, readiness_repo, provider,
         workout_repo, catalog_repo,
     )
 
     assert workout == _WORKOUT
+    assert is_fallback is False
     provider.generate_weekly_plan.assert_awaited_once_with(
         _USER_ID, _WEEK_START, _CONSTRAINTS, _FITNESS_LEVEL, _READINESS, _CATALOG
     )
@@ -114,7 +115,7 @@ async def test_seeds_fitness_level_from_initial_perceived_fitness() -> None:
         constraints=_CONSTRAINTS_WITH_FITNESS, fitness_level=None
     )
 
-    workout = await generate_weekly_plan(
+    workout, _ = await generate_weekly_plan(
         _USER_ID, _WEEK_START, constraints_repo, fitness_repo, readiness_repo, provider,
         workout_repo, catalog_repo,
     )
@@ -134,7 +135,7 @@ async def test_generates_with_none_readiness_for_first_week() -> None:
         readiness=None
     )
 
-    workout = await generate_weekly_plan(
+    workout, _ = await generate_weekly_plan(
         _USER_ID, _WEEK_START, constraints_repo, fitness_repo, readiness_repo, provider,
         workout_repo, catalog_repo,
     )
@@ -158,3 +159,17 @@ async def test_raises_when_too_few_catalog_entries() -> None:
         )
 
     provider.generate_weekly_plan.assert_not_awaited()
+
+
+async def test_returns_fallback_when_provider_fails() -> None:
+    constraints_repo, fitness_repo, readiness_repo, provider, workout_repo, catalog_repo = _repos()
+    provider.generate_weekly_plan.side_effect = RuntimeError("AI down")
+
+    workout, is_fallback = await generate_weekly_plan(
+        _USER_ID, _WEEK_START, constraints_repo, fitness_repo, readiness_repo, provider,
+        workout_repo, catalog_repo,
+    )
+
+    assert is_fallback is True
+    assert workout.user_id == _USER_ID
+    workout_repo.save.assert_awaited_once()

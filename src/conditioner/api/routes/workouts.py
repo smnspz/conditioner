@@ -2,6 +2,7 @@ from datetime import date as Date
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import JSONResponse
 
 from conditioner.api.dependencies import (
     get_constraints_repository,
@@ -55,7 +56,7 @@ async def generate(
     """Generate and persist the authenticated user's weekly workout plan."""
 
     try:
-        workout = await generate_weekly_plan(
+        workout, is_fallback = await generate_weekly_plan(
             user_id,
             week_start,
             constraints_repository,
@@ -70,8 +71,10 @@ async def generate(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
         ) from exc
 
-    # Return the generated workout plan
-    return WorkoutOut.from_domain(workout)
+    # Return the generated workout plan, flagging fallback in the response header
+    out = WorkoutOut.from_domain(workout)
+    headers = {"X-Workout-Source": "fallback"} if is_fallback else {}
+    return JSONResponse(content=out.model_dump(mode="json"), headers=headers)
 
 
 @router.post("/{week_start}/regenerate", response_model=WorkoutOut)
@@ -96,7 +99,7 @@ async def regenerate(
     """Regenerate the authenticated user's weekly plan, e.g. after constraints changed."""
 
     try:
-        workout = await regenerate_week(
+        workout, is_fallback = await regenerate_week(
             user_id,
             week_start,
             constraints_repository,
@@ -111,8 +114,10 @@ async def regenerate(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
         ) from exc
 
-    # Return the regenerated workout plan
-    return WorkoutOut.from_domain(workout)
+    # Return the regenerated workout plan, flagging fallback in the response header
+    out = WorkoutOut.from_domain(workout)
+    headers = {"X-Workout-Source": "fallback"} if is_fallback else {}
+    return JSONResponse(content=out.model_dump(mode="json"), headers=headers)
 
 
 @router.post("/{day}/adjust", response_model=WorkoutOut)

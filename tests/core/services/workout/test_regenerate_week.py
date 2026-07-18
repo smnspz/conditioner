@@ -91,7 +91,7 @@ async def test_completed_sessions_are_kept_over_regenerated_ones() -> None:
         previous=previous, regenerated=regenerated_input
     )
 
-    result = await regenerate_week(
+    result, _ = await regenerate_week(
         _USER_ID, _WEEK_START, constraints_repo, fitness_repo, readiness_repo, provider,
         workout_repo, catalog_repo,
     )
@@ -109,7 +109,7 @@ async def test_incomplete_sessions_are_replaced_by_regenerated_ones() -> None:
         previous=None, regenerated=regenerated_input
     )
 
-    result = await regenerate_week(
+    result, _ = await regenerate_week(
         _USER_ID, _WEEK_START, constraints_repo, fitness_repo, readiness_repo, provider,
         workout_repo, catalog_repo,
     )

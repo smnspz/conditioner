@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import date
 
 from conditioner.core.domain.fitness.fitness_level import FitnessLevel
@@ -14,7 +15,10 @@ from conditioner.core.interfaces.workout.workout_generation_provider import (
     WorkoutGenerationProvider,
 )
 from conditioner.core.interfaces.workout.workout_repository import WorkoutRepository
+from conditioner.core.services.workout.fallback_workout import build_fallback_workout
 from conditioner.core.services.workout.generate_weekly_plan import PrerequisitesMissingError
+
+logger = logging.getLogger(__name__)
 
 
 async def regenerate_week(
@@ -26,9 +30,11 @@ async def regenerate_week(
     generation_provider: WorkoutGenerationProvider,
     workout_repository: WorkoutRepository,
     catalog_repository: ExerciseCatalogRepository,
-) -> Workout:
+) -> tuple[Workout, bool]:
     """Regenerate a user's weekly plan against current constraints, keeping completed sessions.
 
+    Returns (workout, is_fallback). is_fallback is True when AI generation failed and a
+    deterministic fallback was served instead.
     Refuses (PrerequisitesMissingError) if constraints, a fitness level, or a readiness score
     for the week's start date are missing. Sessions already marked completed in the prior plan
     are kept as-is instead of being replaced by the newly generated ones for the same date.
@@ -75,14 +81,23 @@ async def regenerate_week(
         else {}
     )
 
-    # Get the regenerated plan from the AI provider
-    regenerated = await generation_provider.generate_weekly_plan(
-        user_id, week_start, constraints, fitness_level, readiness, catalog_entries
-    )
+    # Get the regenerated plan from the AI provider; fall back deterministically if it fails
+    is_fallback = False
+    try:
+        regenerated = await generation_provider.generate_weekly_plan(
+            user_id, week_start, constraints, fitness_level, readiness, catalog_entries
+        )
+    except Exception:
+        logger.exception("generation.fallback_triggered user=%s", user_id)
+        regenerated = build_fallback_workout(
+            user_id, week_start, constraints, fitness_level, catalog_entries
+        )
+        is_fallback = True
+
     regenerated.sessions = [
         completed_by_date.get(session.date, session) for session in regenerated.sessions
     ]
     await workout_repository.save(regenerated)
 
-    # Return the regenerated workout
-    return regenerated
+    # Return the regenerated workout and whether it came from the fallback path
+    return regenerated, is_fallback
