@@ -19,6 +19,9 @@ from conditioner.core.adapters.persistence.d1.credentials_repository import (
     D1CredentialsRepository,
 )
 from conditioner.core.adapters.persistence.d1.equipment_repository import D1EquipmentRepository
+from conditioner.core.adapters.persistence.d1.exercise_catalog_repository import (
+    D1ExerciseCatalogRepository,
+)
 from conditioner.core.adapters.persistence.d1.metrics_repository import D1MetricsRepository
 from conditioner.core.adapters.persistence.d1.questionnaire_repository import (
     D1QuestionnaireRepository,
@@ -37,6 +40,9 @@ from conditioner.core.adapters.persistence.sqlite.credentials_repository import 
 )
 from conditioner.core.adapters.persistence.sqlite.equipment_repository import (
     SqliteEquipmentRepository,
+)
+from conditioner.core.adapters.persistence.sqlite.exercise_catalog_repository import (
+    SqliteExerciseCatalogRepository,
 )
 from conditioner.core.adapters.persistence.sqlite.metrics_repository import (
     SqliteMetricsRepository,
@@ -65,6 +71,9 @@ from conditioner.core.interfaces.readiness.readiness_repository import Readiness
 from conditioner.core.interfaces.wearables.metrics_repository import MetricsRepository
 from conditioner.core.interfaces.workout.constraints_repository import ConstraintsRepository
 from conditioner.core.interfaces.workout.equipment_repository import EquipmentRepository
+from conditioner.core.interfaces.workout.exercise_catalog_repository import (
+    ExerciseCatalogRepository,
+)
 from conditioner.core.interfaces.workout.workout_generation_provider import (
     WorkoutGenerationProvider,
 )
@@ -175,6 +184,20 @@ def get_equipment_repository(
 
     # Return SQLite-backed equipment repository
     return SqliteEquipmentRepository(settings.database_path)
+
+
+def get_exercise_catalog_repository(
+    settings: Annotated[Settings, Depends(get_settings)],
+    d1_client: Annotated[D1Client | None, Depends(get_d1_client)] = None,
+) -> ExerciseCatalogRepository:
+    """Resolve the active exercise catalog repository, per persistence_engine."""
+
+    if settings.persistence_engine == PersistenceEngine.D1:
+        # Return D1-backed exercise catalog repository
+        return D1ExerciseCatalogRepository(d1_client)  # type: ignore[arg-type]
+
+    # Return SQLite-backed exercise catalog repository
+    return SqliteExerciseCatalogRepository(settings.database_path)
 
 
 def get_fitness_level_repository(
