@@ -70,42 +70,41 @@ SCENARIOS = [
 
 
 def _format_exercise(ex: dict) -> str:
-    """Format a single exercise entry."""
+    """Format a single block exercise entry."""
 
-    modality = ex.get("modality", "")
-    name = ex.get("name", "")
-    if modality == "strength":
-        detail = f"{ex.get('sets')}×{ex.get('reps')} sets/reps"
-        if ex.get("target_load"):
-            detail += f" @ {ex['target_load']} kg"
+    name = ex.get("exercise_name", ex.get("exercise_id", "?"))
+    sets = ex.get("sets", 1)
+    reps = ex.get("reps")
+    duration = ex.get("duration_seconds")
+    cue = ex.get("intensity_cue", "")
+
+    if reps is not None:
+        detail = f"{sets}×{reps}"
+    elif duration is not None:
+        detail = f"{sets}×{duration}s"
     else:
-        detail = f"{ex.get('duration_minutes')} min"
-    equip = ex.get("equipment", "bodyweight")
+        detail = f"{sets} sets"
+
+    if cue:
+        detail += f" ({cue})"
 
     # Return formatted exercise line
-    return f"  - [{modality}] {name}: {detail} ({equip})"
+    return f"  - {name}: {detail}"
 
 
 def _format_session(session: dict) -> str:
     """Format a single session for the results file."""
 
     lines = [f"  **{session['date']}**"]
-    warmup = session.get("warmup_exercises", [])
-    main = session.get("exercises", [])
-    cooldown = session.get("cooldown_exercises", [])
-    if not warmup and not main and not cooldown:
+    blocks = session.get("blocks", [])
+    if not blocks:
         lines.append("  _(rest day)_")
         return "\n".join(lines)
-    if warmup:
-        lines.append("  _Warm-up_")
-        lines.extend(_format_exercise(ex) for ex in warmup)
-    if main:
-        if warmup or cooldown:
-            lines.append("  _Main_")
-        lines.extend(_format_exercise(ex) for ex in main)
-    if cooldown:
-        lines.append("  _Cool-down_")
-        lines.extend(_format_exercise(ex) for ex in cooldown)
+    for block in blocks:
+        block_type = block.get("type", "main").title()
+        est = block.get("estimated_minutes", "?")
+        lines.append(f"  _{block_type} (~{est} min)_")
+        lines.extend(_format_exercise(ex) for ex in block.get("exercises", []))
     return "\n".join(lines)
 
 
