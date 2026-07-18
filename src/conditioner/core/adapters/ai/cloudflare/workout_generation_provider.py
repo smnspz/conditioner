@@ -69,11 +69,7 @@ class CloudflareAIWorkoutGenerationProvider(WorkoutGenerationProvider):
                     "max_tokens": Constants.cloudflare_workout_max_tokens(),
                 },
             )
-            if not response.is_success:
-                body = response.json()
-                errors = body.get("errors", [])
-                msg = errors[0]["message"] if errors else response.text
-                raise RuntimeError(f"Cloudflare AI error {response.status_code}: {msg}")
+            response.raise_for_status()
 
         # Parse the model's JSON output; handle both string and already-parsed responses
         result = response.json()["result"]["response"]
